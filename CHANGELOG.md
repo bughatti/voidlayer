@@ -1,5 +1,10 @@
 # VoidLayer Changelog
 
+## 0.1.1
+
+- **Nothing about other players is saved any more:** the short list of players who had just logged off (it kept the online count right after a reload) now lasts only for your session.
+- "Hop to any layer" with nobody to bring you over now says "on another layer", not "on that layer".
+
 ## 0.1.0
 
 - First release, for WoW Forever.
