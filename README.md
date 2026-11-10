@@ -20,6 +20,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 - **Hop** next to any other layer in your zone, or **Hop to any layer**
 - A Void player on that layer sends you a quick group invite. VoidLayer accepts only that one invite, checks that your layer really changed and leaves the group again. If someone doesn't answer or you didn't move, it tries the next one
 - **One hop every 5 minutes,** the game's own limit. The window counts it down
+- A layer whose Void players can't bring anyone over right now (in a group, in combat, or with helping turned off) says **busy**; hover it for why
 - **Works out of the box:** every VoidLayer player can bring others over unless they turn it off, so nobody has to post in chat or wait for a stranger to notice them. The more players run it, the more layers you can reach
 
 ### Rares on other layers

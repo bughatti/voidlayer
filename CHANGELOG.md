@@ -1,5 +1,10 @@
 # VoidLayer Changelog
 
+## 0.1.3
+
+- **After a hop, the player who brought you over is listed on the layer you landed on,** not the one they reported earlier.
+- **Says why a hop can't happen.** When the Void players on another layer can't bring anyone over right now (in a group, in combat, or with helping turned off), the layer reads **busy** and Hop says so, instead of "no Void player" while the window counts one there.
+
 ## 0.1.2
 
 - **Hops finish properly.** The first real hop worked (joining the group moved you to the new layer within seconds), but VoidLayer waited for the exact layer the other player had reported earlier, so it never said "you're on Layer B now" and never left the group. Now any move off your layer while you're in their group counts as the hop, and wherever you land is recorded as their layer.

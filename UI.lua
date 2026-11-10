@@ -292,6 +292,7 @@ UI_Update = function()
             r:ClearAllPoints(); r:SetPoint("TOPLEFT", 10, y - (i - 1) * ROW_H)
             r.a:SetText(c:Label(zone, l.pair))
             local what = l.n > 0 and ("%d Void player%s"):format(l.n, l.n == 1 and "" or "s") or ""
+            if l.n > 0 and l.hosts == 0 then what = what .. " |cff888888· busy|r" end   -- why: in the row tooltip
             if l.rare then what = (what ~= "" and what .. " · " or "") .. "|cffff8040rare up|r" end
             r.b:SetText(what)
             r.hop.pair = l.pair
@@ -300,7 +301,9 @@ UI_Update = function()
             r:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                 GameTooltip:AddLine(c:Label(zone, l.pair) .. "  |cff777777" .. l.pair .. "|r", 1, 1, 1)
-                GameTooltip:AddLine(l.hosts > 0 and "A Void player there can bring you over." or "Nobody there has said they can bring you over yet.", 0.8, 0.8, 0.8, true)
+                GameTooltip:AddLine(l.hosts > 0 and "A Void player there can bring you over." or (l.n > 0
+                    and "The Void player there can't bring you over right now: in a group, in combat, busy, or Help others is off. Refresh in a few minutes."
+                    or "Nobody there has said they can bring you over yet."), 0.8, 0.8, 0.8, true)
                 GameTooltip:Show()
             end)
             r:SetScript("OnLeave", function() GameTooltip:Hide() end)
