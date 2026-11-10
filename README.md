@@ -35,7 +35,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 - **Help others change layer** in the window (or the Void hub's quick switches) turns it off
 
 ### Its own network
-- VoidLayer players find each other through a hidden chat channel with a password that changes every day, so nobody can take it over and lock players out for more than a day. Messages go by hidden addon whispers. No names are saved, and the only player who sees yours is the one whose group you join
+- VoidLayer players of your faction find each other through a hidden chat channel (one per faction: you can't group with the other faction anyway) with a password that changes every day, so nobody can take it over and lock players out for more than a day. Messages go by hidden addon whispers. No names are saved, and the only player who sees yours is the one whose group you join
 - **VoidSweep** players are on the same network, so they help you hop and share their rares too
 - The Void **Players online** box shows how many players are on the layer network right now
 
@@ -51,6 +51,7 @@ You rarely need them: click your layer under the minimap.
 | `/vl hop` | Hop to any other layer in your zone (`/vl hop B` for Layer B) |
 | `/vl host` | Help others change layer: on or off |
 | `/vl layers` | The layers in your zone, in chat |
+| `/vl net` | Check that messages to other VoidLayer players get through (and how many bounced) |
 
 ---
 

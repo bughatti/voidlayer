@@ -1,5 +1,9 @@
 # VoidLayer Changelog
 
+## 0.1.4
+
+- **One network per faction.** Layer hops need a group invite, and groups can't cross factions, so players of the other faction on the old shared channel could never bring you over (and were counted as online). Horde and Alliance now each have their own channel. New `/vl net` checks that messages get through and shows bounced whispers. Older versions stay on the old channel: please update.
+
 ## 0.1.3
 
 - **After a hop, the player who brought you over is listed on the layer you landed on,** not the one they reported earlier.

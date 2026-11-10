@@ -378,7 +378,7 @@ UI_Update = function()
         if not status then
             local online = c:Online()
             local why = c:BlockReason()
-            status = why or (online and ("%d other Void player%s online on your realm."):format(online, online == 1 and "" or "s"))
+            status = why or (online and ("%d other Void player%s of your faction online."):format(online, online == 1 and "" or "s"))
         end
     end
     f.status:ClearAllPoints(); f.status:SetPoint("TOPLEFT", 10, y)
@@ -507,8 +507,10 @@ SlashCmdList.VOIDLAYER = function(msg)
         c:Start(p)
     elseif cmd == "host" then c:SetHosting(not c:HostingOn())
     elseif cmd == "layers" then c:Report()
+    elseif cmd == "net" then
+        if c.NetReport then c:NetReport() else say("the running layer core is older; update VoidSweep too.") end
     else
-        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [B] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat")
+        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [B] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat · |cffffd200/vl net|r players online + whisper counts")
     end
 end
 
