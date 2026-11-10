@@ -1,5 +1,10 @@
 # VoidLayer Changelog
 
+## 0.1.2
+
+- **Hops finish properly.** The first real hop worked (joining the group moved you to the new layer within seconds), but VoidLayer waited for the exact layer the other player had reported earlier, so it never said "you're on Layer B now" and never left the group. Now any move off your layer while you're in their group counts as the hop, and wherever you land is recorded as their layer.
+- **You're never left in the hop group:** VoidLayer leaves the two-person group it joined for the hop even when the other player's name shows differently, and only that group, never one you join yourself afterwards.
+
 ## 0.1.1
 
 - **Nothing about other players is saved any more:** the short list of players who had just logged off (it kept the online count right after a reload) now lasts only for your session.
