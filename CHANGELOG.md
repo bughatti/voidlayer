@@ -1,5 +1,11 @@
 # VoidLayer Changelog
 
+## 0.1.5 — 2026-11-12
+
+- **The layer label stays where you put it**, even after a restart (it could jump back).
+- **The players-here box:** its tooltip no longer covers the box while you drag it, and it opens above or below the box depending on where the box sits on screen.
+- **Void hub button:** left-click opens one panel with all your Void addons by name, grouped, each with its own on/off switches (it replaces the ring of icons), with a background slider. The hub's info window now stays where you put it.
+
 ## 0.1.4
 
 - **One network per faction.** Layer hops need a group invite, and groups can't cross factions, so players of the other faction on the old shared channel could never bring you over (and were counted as online). Horde and Alliance now each have their own channel. New `/vl net` checks that messages get through and shows bounced whispers. Older versions stay on the old channel: please update.

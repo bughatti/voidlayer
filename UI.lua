@@ -410,19 +410,14 @@ local function buildLabel()
     b:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = VoidPX() })
     b:SetBackdropColor(0.04, 0.04, 0.07, 0.8)
     b:SetBackdropBorderColor(A[1], A[2], A[3], 0.5)
-    local p = db().labelPos
-    if p then b:SetPoint(p[1], UIParent, p[2], p[3], p[4]) else b:SetPoint("TOP", MinimapCluster or Minimap, "BOTTOM", 0, MinimapCluster and 6 or -18) end   -- the cluster: a gathering HUD can carry Minimap off (live 11-09)
+    b:SetPoint("TOP", MinimapCluster or Minimap, "BOTTOM", 0, MinimapCluster and 6 or -18)   -- the cluster: a gathering HUD can carry Minimap off (live 11-09)
     b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     b.text:SetPoint("CENTER")
-    b:SetMovable(true)
-    b:SetClampedToScreen(true)
-    b:RegisterForDrag("LeftButton")
-    b:SetScript("OnDragStart", function(self) if IsShiftKeyDown() then self:StartMoving() end end)
-    b:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local pt, _, rel, x, y = self:GetPoint()
-        db().labelPos = { pt, rel, x, y }
-    end)
+    -- plain drag, kept after a restart (VoidMove.lua; the user, 11-12: no hidden Shift). The old
+    -- labelPos is dropped: a plain drag used to save it against the minimap cluster, so after a
+    -- /reload the label could land at the bottom of the screen.
+    db().labelPos = nil
+    ns.Move(b, { db = db, key = "label" })
     b:SetScript("OnClick", toggle)
     b:SetScript("OnEnter", function(self)
         local c = core()
@@ -437,7 +432,7 @@ local function buildLabel()
         else
             GameTooltip:AddLine("Point at or target any NPC to read your layer.", 0.8, 0.8, 0.8, true)
         end
-        GameTooltip:AddLine("Click: the layer window · Shift-drag: move", 0.6, 0.6, 0.6)
+        GameTooltip:AddLine("Click: the layer window · Drag: move", 0.6, 0.6, 0.6)
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
