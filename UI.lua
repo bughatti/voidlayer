@@ -383,6 +383,23 @@ local function build()
     f.any = button(f, "Hop to any layer", 140)
     f.any:SetScript("OnClick", function() local c = core(); if c then c:Start(nil) end end)
     tip(f.any, "Hop to any other layer", "Handy when a rare or a node is taken on yours: any Void player on another layer in this zone brings you over.")
+    -- fresh camp (VoidLayerCore section 5): a layer where the spot you're standing on wasn't cleared lately
+    f.fresh = button(f, "Fresh layer here", W - 20)
+    f.fresh:SetScript("OnClick", function() local c = core(); if c and c.StartFresh then c:StartFresh() end end)
+    f.fresh:SetScript("OnEnter", function(self)
+        local c = core()
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("Fresh layer here", 1, 1, 1)
+        GameTooltip:AddLine("Cleared this spot? A hop doesn't move you: the world around you becomes the other layer's copy, where these mobs may still be up. This picks the layer where nobody reported clearing this spot, or reported it longest ago, and skips one you cleared it on yourself in the last 10 minutes. Not a promise: only Void players report clears.", 0.8, 0.8, 0.8, true)
+        local cur, zone
+        if c then cur, zone = c:Here() end
+        if c and cur and c.SpotCleared then
+            local age = c:SpotCleared(zone, cur)
+            GameTooltip:AddLine(age and ("This spot on your layer: cleared %s ago."):format(ago(age)) or "This spot on your layer: no clear seen yet.", 1, 0.82, 0, true)
+        end
+        GameTooltip:Show()
+    end)
+    f.fresh:SetScript("OnLeave", function() GameTooltip:Hide() end)
     f.refresh = button(f, "Refresh", 140)
     f.refresh:SetScript("OnClick", function()
         local c = core()
@@ -515,6 +532,9 @@ UI_Update = function()
             local what = l.n > 0 and ("%d Void player%s"):format(l.n, l.n == 1 and "" or "s") or ""
             if l.n > 0 and l.hosts == 0 then what = what .. " |cff888888· busy|r" end   -- why: in the row tooltip
             if l.rare then what = (what ~= "" and what .. " · " or "") .. "|cffff8040rare up|r" end
+            -- your spot on that layer (fresh camp): cleared lately = no point hopping there to farm it
+            local spot = c.SpotCleared and c:SpotCleared(zone, l.pair)
+            if spot then what = (what ~= "" and what .. " · " or "") .. ("|cffcc6666spot cleared %s ago|r"):format(ago(spot)) end
             r.b:SetText(what)
             r.hop.pair = l.pair
             r.hop:SetShown(l.hosts > 0 or l.rare)
@@ -600,6 +620,9 @@ UI_Update = function()
     local left = (c and zone) and c:AskLeft(zone) or 0
     f.refresh:SetEnabled(c ~= nil and zone ~= nil and left == 0)
     f.refresh:SetText(left > 0 and ("Refresh (%d:%02d)"):format(math.floor(left / 60), math.floor(left % 60)) or "Refresh")
+    y = y - 26
+    f.fresh:ClearAllPoints(); f.fresh:SetPoint("TOPLEFT", 10, y)
+    f.fresh:SetEnabled(c ~= nil and c.StartFresh ~= nil and not blocked and cur ~= nil)
     y = y - 26
 
     local status = c and c:Status()
@@ -701,10 +724,10 @@ end
 ----------------------------------------------------------------------
 -- Start-up, slash commands, the Void hub
 ----------------------------------------------------------------------
--- "/vl hop 17" or "/vl hop 7053-17" (a layer's name is its number after the dash)
+-- "/vl hop 6832" or "/vl hop 6832-17" (a layer's name is its server number, 2026-11-14)
 local function pairFor(c, zone, want)
     if not want or want == "" then return nil end
-    if want:match("^%d+%-%d+$") then return want end
+    if want:match("^%d+%-%d+$") then return want:match("^(%d+)") .. "-0" end
     local letter = want:upper():gsub("^LAYER%s*", "")
     local pairs_ = {}
     for p in pairs(c:Counts(zone)) do pairs_[#pairs_ + 1] = p end

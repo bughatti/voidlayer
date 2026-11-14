@@ -2,7 +2,7 @@
 ## Title: |cff00c7ffVoidLayer|r
 ## Notes: WoW Forever layers: see your layer, hop to another with one click, and rares up on other layers
 ## Author: Vede
-## Version: 0.2.0
+## Version: 0.3.0
 ## SavedVariables: VoidLayerDB, VoidPresenceDB
 ## SavedVariablesPerCharacter: VoidLayerCharDB, VoidHubCharDB
 ## IconTexture: Interface\Icons\Spell_Arcane_Blink

@@ -1,5 +1,11 @@
 # VoidLayer Changelog
 
+## 0.3.0 — 2026-11-14
+
+- **Fixed: two players on the same layer could see different layer names.** Tested with two players side by side on one layer: only the first number in the game's id is the layer; the second one counts up separately for every player. Layers are now named by that first number ("Layer 6832"), so everyone on a layer sees the same name, and hops, rares, zone links and the layer count all go by it. Older VoidLayer and VoidSweep versions still work with this one.
+- **Fresh camp: farm the same spot on another layer.** A hop doesn't move you: the world around you becomes the other layer's copy. So when a pack dies around you (five mobs close together), VoidLayer notes the spot as cleared on your layer and tells the VoidLayer players in your zone (when, on a rough grid; never anyone's position). **Fresh layer here** in the window hops you to the layer where nobody reported clearing your spot, or reported it longest ago; a layer you cleared it on yourself in the last 10 minutes is skipped. Other layers in the window show "spot cleared 4m ago". Clear a camp and a Void player on such a layer can bring you over: "Hop there?" after the fight, one click.
+- **Fixed: a player's companion pet could flip your layer** for a moment (its id points at another server). Pets are never read now.
+
 ## 0.2.0 — 2026-11-14
 
 - **Layer names are the same for everyone.** A layer is named by its own number ("Layer 98"), so you and a guildie on one layer see the same name. They used to be letters in the order you met them, so the same layer could be "B" for you and "G" for your guildie.
