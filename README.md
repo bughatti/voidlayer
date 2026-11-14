@@ -13,8 +13,20 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 ## Features
 
 ### Your layer, always in view
-- **Under the minimap:** "Layer A", "Layer B", ... Hover it for the layer's id and the other layers Void players are on in your zone. An orange dot means a rare is up on another layer. Click it for the window
+- **Under the minimap:** "Layer 98". A layer's name is its own number, so it's **the same for every player**: you and a guildie on one layer both see "Layer 98". Hover it for the full id and the other layers Void players are on in your zone. An orange dot means a rare is up on another layer. Click it for the window
 - Read from the NPCs around you, so look at or target any NPC once after you arrive somewhere
+- **Players seen on this layer:** every player your nameplates, target or mouseover picked up in the last 15 minutes, and how many are the other faction. You only ever see players on your own layer, so they're all on it. It's a minimum, not everyone: the game gives addons no full count
+
+### Your layer, zone to zone
+- Every zone gives you its own layer number, and the game remembers yours: walk from the Barrens into Ashenvale and back, and you're on the same "Layer 88" and "Layer 100" every time (measured)
+- When you cross a zone line on your own, VoidLayer remembers which numbers are yours. The window says **"Same layer as The Barrens 88"**
+- **Rares next door on your layer:** a rare up in the next zone on your number there shows in the window and in chat: walk over, no hop needed
+- Other VoidLayer players' crossings show too, in grey ("Other Void players went on to Stonetalon 96"). The game keeps each player's numbers apart, so theirs may not be yours
+- **How many layers a zone has:** the window shows how many layers VoidLayer players have seen in your zone in the last 30 minutes
+
+### World refresh: a new layer, solo
+- Now and then the game says "The world around you will refresh in 9 Minutes": it's going to move you to another layer in the zone you're in. VoidLayer counts it down under the minimap and in the window, and warns you in chat (louder if you just hopped, because that hop won't hold)
+- **New layer now** in the window does it right away: solo, no group or helper needed. The game picks the layer
 
 ### Hop with one click
 - **Hop** next to any other layer in your zone, or **Hop to any layer**
@@ -25,7 +37,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### Rares on other layers
 - When a Void player sees a rare, every Void player in that zone hears about it: its name, which layer, how much health it has left, how long ago, and when it dies
-- **On another layer?** "Rare X is up on Layer B. Hop there?" One click, and the player who saw it brings you over
+- **On another layer?** "Rare X is up on Layer 17. Hop there?" One click, and the player who saw it brings you over
 - **On yours?** A line in chat with where it was seen
 - The window lists the rares up in your zone with a **Hop** button on each
 
@@ -48,7 +60,7 @@ You rarely need them: click your layer under the minimap.
 | Command | What it does |
 |---|---|
 | `/vl` | Open or close the window |
-| `/vl hop` | Hop to any other layer in your zone (`/vl hop B` for Layer B) |
+| `/vl hop` | Hop to any other layer in your zone (`/vl hop 17` for Layer 17) |
 | `/vl host` | Help others change layer: on or off |
 | `/vl layers` | The layers in your zone, in chat |
 | `/vl net` | Check that messages to other VoidLayer players get through (and how many bounced) |
@@ -59,14 +71,14 @@ You rarely need them: click your layer under the minimap.
 
 1. Install with the CurseForge app, or copy the `VoidLayer` folder into `World of Warcraft/_forever_/Interface/AddOns/`.
 2. Restart WoW or `/reload`.
-3. Point at any NPC: your layer shows under the minimap. Click it.
+3. Point at any NPC: your layer shows under the minimap ("Layer 98"). Click it.
 
 ---
 
 ## Good to Know
 
-- **There's no "go to layer X" in the game.** The only way to another layer is to join a group whose leader is on it, which is what a hop does. You can't pick a layer nobody you can reach is on.
-- **Layer letters are yours.** Layers are named A, B, C in the order you meet them in each zone, so your "Layer B" may be someone else's "Layer C". Hover a layer for its id ("7053-17"), which is the same for everyone.
+- **There's no "go to layer X" in the game.** To reach a chosen layer you join a group whose leader is on it, which is what a hop does. You can't pick a layer nobody you can reach is on.
+- **Two layers can share a number** (on different servers). Then both show the full id ("Layer 6829-98").
 - **Hops work within your own server group.** If leaving the group ever sends you back to your old layer, VoidLayer notices and keeps you in the group on later hops (**Stay grouped after a hop**).
 - **Settings are per character.**
 

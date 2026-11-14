@@ -1,5 +1,14 @@
 # VoidLayer Changelog
 
+## 0.2.0 — 2026-11-14
+
+- **Layer names are the same for everyone.** A layer is named by its own number ("Layer 98"), so you and a guildie on one layer see the same name. They used to be letters in the order you met them, so the same layer could be "B" for you and "G" for your guildie.
+- **World refresh: a new layer, solo.** When the game says "The world around you will refresh in 9 Minutes", VoidLayer counts it down under the minimap and in the window, and warns you in chat (louder if you just hopped, because that hop won't hold). **New layer now** in the window does it right away, with no group or helper needed.
+- **Fixed: after a world refresh your layer kept showing the old one** for up to 3 minutes. It now reads the new one straight away.
+- **Players seen on this layer:** how many players you've seen on your layer in the last 15 minutes, and how many are the other faction. You only see players on your own layer, so they're all on it. It's a minimum: the game gives addons no full count.
+- **Your layer, zone to zone.** Each zone gives you its own layer number, and the game remembers yours. When you cross a zone line on your own, VoidLayer remembers your numbers: "Same layer as The Barrens 88", and a rare up next door on your number there says "walk over, no hop needed". Other players' crossings show in grey, since theirs may not be yours.
+- **How many layers a zone has:** how many layers VoidLayer players have seen in your zone in the last 30 minutes.
+
 ## 0.1.6 — 2026-11-12
 
 - **Fixed: a side of a box could be missing**, e.g. the right line of the recipes box and its buttons when the game window is an odd number of pixels wide. Every Void box now always shows all four border lines.

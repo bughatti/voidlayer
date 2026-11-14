@@ -139,6 +139,150 @@ end
 local win
 local UI_Update   -- the window refresh (below)
 
+----------------------------------------------------------------------
+-- The game's "world refresh" (2026-11-14): "The world around you will refresh in 9 Minutes ...
+-- Refresh Now". It moves you to another layer: measured in Stonetalon, solo, no zone change,
+-- 6831-95 -> 7051-96. SHARD_TRANSFER_IMMINENT starts it (GetEvictionTimeRemaining = seconds
+-- left), SHARD_TRANSFER_CANCELLED stops it, SHARD_TRANSFER is the move. "New layer now" calls
+-- what the game's Refresh Now calls (C_PlayerInteractionManager.ShardTransferConfirm), only
+-- from a click, only while one is pending: a solo layer change, no group needed.
+----------------------------------------------------------------------
+local refreshAt     -- GetTime() when the game moves you; nil = none coming
+local cancelledAt   -- GetTime() of the last SHARD_TRANSFER_CANCELLED (Refresh Now sends it before the move)
+local function refreshLeft()
+    if not refreshAt then return nil end
+    -- the move never came (logged out of it, the event lost): stop showing it 15 minutes past due
+    if GetTime() - refreshAt > 900 then refreshAt = nil; return nil end
+    return math.max(0, refreshAt - GetTime())
+end
+-- a /reload during the countdown: the warning doesn't fire again, the time left still counts
+local function restoreRefresh()
+    local left = GetEvictionTimeRemaining and GetEvictionTimeRemaining()
+    if type(left) == "number" and left > 0 and left < 3600 then refreshAt = GetTime() + left end
+end
+function ns.RefreshLeft() return refreshLeft() end
+local function mmss(s) return ("%d:%02d"):format(math.floor(s / 60), math.floor(s % 60)) end
+local function canRefreshNow()
+    return refreshAt ~= nil and C_PlayerInteractionManager and C_PlayerInteractionManager.ShardTransferConfirm ~= nil
+        and not UnitAffectingCombat("player")
+end
+function ns.RefreshNow()
+    if not refreshAt then say("no world refresh coming right now; the game offers one now and then.") return end
+    if UnitAffectingCombat("player") then say("not in combat: the game only refreshes you out of combat.") return end
+    if C_PlayerInteractionManager and C_PlayerInteractionManager.ShardTransferConfirm then
+        C_PlayerInteractionManager.ShardTransferConfirm()
+    end
+end
+
+----------------------------------------------------------------------
+-- Players seen on your layer (the user, 2026-11-14: "is there a way for a player to see how many
+-- players are on their layer"). The game has no count, and /who has no layer field. But you only
+-- see players on your own layer, so every player your nameplates, target or mouseover pick up is
+-- on it: a real count, as a minimum. Kept 15 minutes; starts over when your layer or zone changes.
+----------------------------------------------------------------------
+local SEEN_LIVE = 900
+local seenPlayers = {}   -- [guid] = { t, enemy }
+local myFaction
+local function notePlayer(unit)
+    if not (UnitExists(unit) and UnitIsPlayer(unit)) or UnitIsUnit(unit, "player") then return end
+    -- seen in the world, not just named: a party member targeted from the party frames can be on
+    -- another layer (Sol review); UnitIsVisible is false for them
+    local vis = UnitIsVisible and UnitIsVisible(unit)
+    if not vis or (issecretvalue and issecretvalue(vis)) then return end
+    local g = UnitGUID(unit)
+    if type(g) ~= "string" or (issecretvalue and issecretvalue(g)) then return end
+    local fac = UnitFactionGroup(unit)
+    if issecretvalue and issecretvalue(fac) then fac = nil end
+    myFaction = myFaction or UnitFactionGroup("player")
+    seenPlayers[g] = { t = GetTime(), enemy = fac ~= nil and myFaction ~= nil and fac ~= myFaction }
+end
+-- players seen on your layer: total, other faction, the other faction's name
+function ns.PlayersSeen()
+    local n, e, now = 0, 0, GetTime()
+    for g, s in pairs(seenPlayers) do
+        if now - s.t > SEEN_LIVE then seenPlayers[g] = nil
+        else n = n + 1; if s.enemy then e = e + 1 end end
+    end
+    myFaction = myFaction or UnitFactionGroup("player")
+    return n, e, myFaction == "Horde" and "Alliance" or "Horde"
+end
+local function seenText(long)
+    local n, e, other = ns.PlayersSeen()
+    if n == 0 then return long and "Players seen on this layer: none yet (last 15 min)" or nil end
+    return ("Players seen on this layer: |cffffffff%d|r%s%s"):format(n,
+        e > 0 and (" (|cffff6060%d %s|r)"):format(e, other) or "", long and " · last 15 min" or "")
+end
+-- "Same layer as The Barrens 88": your layer's numbers in other zones, from YOUR zone crossings
+-- (VoidLayerCore section 4). Other Void players' crossings follow, grey: true for them, and the game
+-- keeps each player's number per zone, so yours may differ. nil when none is known.
+function ns.SpanText(c, zone, cur)
+    local list = c.SameLayer and c:SameLayer(zone, cur) or {}
+    if #list == 0 then return nil end
+    table.sort(list, function(a, b) return zoneName(a.zone) < zoneName(b.zone) end)
+    local mine, theirs = {}, {}
+    for _, x in ipairs(list) do
+        local t = zoneName(x.zone) .. " " .. c:Label(x.zone, x.pair):gsub("^Layer ", "")
+        if x.sure then mine[#mine + 1] = t else theirs[#theirs + 1] = t end
+    end
+    local function few(t) return table.concat(t, " · ", 1, math.min(3, #t)) .. (#t > 3 and (" +%d"):format(#t - 3) or "") end
+    local out = #mine > 0 and ("Same layer as " .. few(mine)) or nil
+    if #theirs > 0 then
+        local hint = ("|cff777777Other Void players went on to %s (yours may differ)|r"):format(few(theirs))
+        out = out and (out .. "\n" .. hint) or hint
+    end
+    return out
+end
+
+local playerEv = CreateFrame("Frame")
+for _, e in ipairs({ "NAME_PLATE_UNIT_ADDED", "PLAYER_TARGET_CHANGED", "UPDATE_MOUSEOVER_UNIT" }) do
+    pcall(playerEv.RegisterEvent, playerEv, e)
+end
+playerEv:SetScript("OnEvent", function(_, ev, unit)
+    if not forever() then return end
+    unit = ev == "PLAYER_TARGET_CHANGED" and "target" or ev == "UPDATE_MOUSEOVER_UNIT" and "mouseover" or unit
+    if unit then pcall(notePlayer, unit) end
+end)
+-- players still on screen stay counted (their nameplate was added long ago)
+C_Timer.NewTicker(30, function()
+    if not forever() then return end
+    ns.PlayersSeen()   -- drops the ones older than 15 minutes, window open or not (Sol review)
+    for i = 1, 40 do
+        local u = "nameplate" .. i
+        if UnitExists(u) then pcall(notePlayer, u) end
+    end
+end)
+-- a new layer (a hop, a world refresh, a group change) or a new zone: start over
+if ns.Layer and ns.Layer.OnChange then ns.Layer:OnChange(function() wipe(seenPlayers) end) end
+
+local refreshEv = CreateFrame("Frame")
+for _, e in ipairs({ "SHARD_TRANSFER_IMMINENT", "SHARD_TRANSFER_CANCELLED", "SHARD_TRANSFER" }) do
+    pcall(refreshEv.RegisterEvent, refreshEv, e)
+end
+refreshEv:SetScript("OnEvent", function(_, ev)
+    if not forever() then return end
+    if ev == "SHARD_TRANSFER_IMMINENT" then
+        local left = GetEvictionTimeRemaining and GetEvictionTimeRemaining()
+        if type(left) ~= "number" or left <= 0 then left = 0 end
+        refreshAt = GetTime() + left
+        local c = core()
+        -- a hop in the last 5 minutes (its cooldown is running) or under way: that's what gets lost
+        local hopped = c and ((c.CooldownLeft and (c:CooldownLeft() or 0) > 0) or (c.Busy and c:Busy()))
+        say(("the game will move you to another layer in %s (world refresh)%s. |cffffd200New layer now|r in the VoidLayer window does it right away, solo, no group needed.")
+            :format(left > 0 and mmss(left) or "a moment", hopped and ": |cffff8040your hop won't hold after that|r" or ""))
+    elseif ev == "SHARD_TRANSFER_CANCELLED" then
+        refreshAt, cancelledAt = nil, GetTime()
+    else   -- SHARD_TRANSFER: moved. Layer.lua starts reading again; the label updates when it knows.
+        -- It also fires on every zone change, no warning first (live 11-14, Barrens -> Ashenvale):
+        -- only a refresh that was announced gets the chat line. Refresh Now / New layer now sends
+        -- CANCELLED first, then the move (live 11-14), so a move right after a cancel counts too.
+        local was = refreshAt or (cancelledAt and GetTime() - cancelledAt < 5)
+        refreshAt, cancelledAt = nil, nil
+        if was then say("world refresh done: reading your new layer from the NPCs around you.") end
+    end
+    ns.UpdateLabel()
+    if UI_Update then UI_Update() end
+end)
+
 local function build()
     local f = CreateFrame("Frame", "VoidLayerFrame", UIParent, "BackdropTemplate")
     f:SetSize(W, 200)
@@ -174,6 +318,31 @@ local function build()
     f.mine:SetPoint("TOPLEFT", 10, -28)
     f.mine:SetJustifyH("LEFT")
     f.mine:SetWidth(W - 20)
+    -- players seen on your layer (a hover explains it's a minimum)
+    f.seenBox = CreateFrame("Frame", nil, f)
+    f.seenBox:SetSize(W - 20, 14)
+    -- hover only: motion events, so a drag on this line still moves the window
+    if f.seenBox.EnableMouseMotion then f.seenBox:EnableMouseMotion(true) else f.seenBox:EnableMouse(true) end
+    f.seen = f.seenBox:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.seen:SetPoint("LEFT")
+    f.seen:SetJustifyH("LEFT")
+    f.seen:SetTextColor(0.8, 0.8, 0.8)
+    -- the same layer in other zones (it has a different number in each)
+    f.span = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    f.span:SetJustifyH("LEFT")
+    f.span:SetWidth(W - 20)
+    tip(f.seenBox, "Players seen on this layer",
+        "Every player your nameplates, target or mouseover picked up in the last 15 minutes: you only ever see players on your own layer, so they're all on it. A minimum, not everyone: the game gives addons no full count. Turn on friendly player nameplates to count more. Starts over when your layer or zone changes.")
+
+    -- world refresh coming: the countdown and "New layer now" (only shown while one is pending)
+    f.wr = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.wr:SetJustifyH("LEFT")
+    f.wr:SetWidth(W - 130)
+    f.wr:SetTextColor(1, 0.55, 0.25)
+    f.wrBtn = button(f, "New layer now", 110)
+    f.wrBtn:SetScript("OnClick", function() ns.RefreshNow() end)
+    tip(f.wrBtn, "New layer now",
+        "The game has a world refresh coming for you, which moves you to another layer. This does it right away: solo, no group or host needed. The game picks the layer. Out of combat only.")
 
     f.layersH = header(f, "Other layers here")
     f.layerRows = {}
@@ -301,9 +470,42 @@ UI_Update = function()
     end
 
     local y = -50
+    if forever() and c and cur then
+        f.seenBox:ClearAllPoints(); f.seenBox:SetPoint("TOPLEFT", 10, -44)
+        f.seen:SetText(seenText(true))
+        f.seenBox:Show()
+        y = y - 14
+    else
+        f.seenBox:Hide()
+    end
+    local span = (forever() and c and cur and c.SameLayer) and ns.SpanText(c, zone, cur)
+    if span then
+        f.span:ClearAllPoints(); f.span:SetPoint("TOPLEFT", 10, y + 2)
+        f.span:SetText(span)
+        f.span:Show()
+        y = y - (f.span:GetStringHeight() + 4)
+    else
+        f.span:Hide()
+    end
+    local wrLeft = forever() and refreshLeft()
+    if wrLeft then
+        f.wr:ClearAllPoints(); f.wr:SetPoint("TOPLEFT", 10, y - 4)
+        f.wr:SetText(wrLeft > 0 and ("World refresh in %s: the game moves you to another layer."):format(mmss(wrLeft))
+            or "World refresh any moment: the game moves you to another layer.")
+        f.wrBtn:ClearAllPoints(); f.wrBtn:SetPoint("TOPRIGHT", -10, y)
+        f.wrBtn:SetEnabled(canRefreshNow())
+        f.wr:Show(); f.wrBtn:Show()
+        y = y - math.max(24, f.wr:GetStringHeight() + 8)
+    else
+        f.wr:Hide(); f.wrBtn:Hide()
+    end
     local blocked = "..."; if c then blocked = c:Blocked() end
     -- other layers
     f.layersH:ClearAllPoints(); f.layersH:SetPoint("TOPLEFT", 10, y); y = y - 16
+    -- how many layers this zone has, as far as Void players saw in the last 30 minutes
+    local nSeen = (c and zone and c.LayersSeen) and c:LayersSeen(zone) or 0
+    f.layersH:SetText(nSeen > 1 and ("Other layers here  |cff888888· %d layers seen in this zone (30 min)|r"):format(nSeen)
+        or "Other layers here")
     local list = (c and zone) and otherLayers(c, zone, cur) or {}
     for i, r in ipairs(f.layerRows) do
         local l = list[i]
@@ -346,20 +548,30 @@ UI_Update = function()
     -- rares
     f.raresH:ClearAllPoints(); f.raresH:SetPoint("TOPLEFT", 10, y); y = y - 16
     local rares = (c and zone) and c:Rares(zone) or {}
+    -- and rares up next door on YOUR layer (linked across zones): walk over, no hop
+    if c and zone and c.RaresNextDoor then
+        for _, x in ipairs(c:RaresNextDoor()) do rares[#rares + 1] = x end
+    end
     for i, r in ipairs(f.rareRows) do
         local x = rares[i]
         if x then
             r:ClearAllPoints(); r:SetPoint("TOPLEFT", 10, y - (i - 1) * ROW_H)
             r.a:SetText((x.hp == 0 and "|cff888888" or "|cffffd200") .. x.name .. "|r")
-            local where = x.same and "|cff33ff33your layer|r" or c:Label(zone, x.pair)
+            local where = x.nextDoor and ("|cff33ff33your layer|r, " .. zoneName(x.zone))
+                or x.same and "|cff33ff33your layer|r" or c:Label(zone, x.pair)
             r.b:SetText(("%s · %s%s"):format(where, x.hp == 0 and "dead " or (x.hp < 100 and (x.hp .. "% ") or ""), ago(x.age)))
             r.hop.pair, r.hop.zone, r.hop.prefer = x.pair, x.zone, x.origin
-            r.hop:SetShown(not x.same and x.hp > 0 and cur ~= nil)
+            r.hop:SetShown(not x.same and not x.nextDoor and x.hp > 0 and cur ~= nil)
             r.hop:SetEnabled(not blocked)
             r:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                 GameTooltip:AddLine(x.name, 1, 0.82, 0)
-                GameTooltip:AddLine(("%s  |cff777777%s|r"):format(x.same and "On your layer" or c:Label(zone, x.pair), x.pair), 1, 1, 1)
+                if x.nextDoor then
+                    GameTooltip:AddLine(("In %s, on your layer (%s there)  |cff777777%s|r"):format(zoneName(x.zone), c:Label(x.zone, x.pair), x.pair), 1, 1, 1, true)
+                    GameTooltip:AddLine("Walk over: no hop needed. Your own zone crossing showed this is your layer there.", 0.8, 0.8, 0.8, true)
+                else
+                    GameTooltip:AddLine(("%s  |cff777777%s|r"):format(x.same and "On your layer" or c:Label(zone, x.pair), x.pair), 1, 1, 1)
+                end
                 if x.x > 0 or x.y > 0 then GameTooltip:AddLine(("Seen near %.0f, %.0f, %s ago"):format(x.x / 10, x.y / 10, ago(x.age)), 0.8, 0.8, 0.8) end
                 GameTooltip:Show()
             end)
@@ -372,7 +584,7 @@ UI_Update = function()
     local rs = math.min(#rares, RARE_ROWS)
     if rs == 0 then
         f.raresEmpty:ClearAllPoints(); f.raresEmpty:SetPoint("TOPLEFT", 14, y - 2)
-        f.raresEmpty:SetText("None seen by Void players in the last 10 minutes.")
+        f.raresEmpty:SetText("None seen by Void players in the last 10 minutes (here, or next door on your layer).")
         f.raresEmpty:Show()
         y = y - ROW_H - 4
     else
@@ -448,8 +660,16 @@ local function buildLabel()
             GameTooltip:AddLine(("%s  |cff777777%s|r"):format(c:Label(zone, cur), cur), 1, 1, 1)
             local s = c:Summary(zone)
             if s then GameTooltip:AddLine(s, 0.8, 0.8, 0.8, true) end
+            local seen = seenText(false)
+            if seen then GameTooltip:AddLine(seen, 0.8, 0.8, 0.8) end
+            local span = ns.SpanText(c, zone, cur)
+            if span then GameTooltip:AddLine(span, 0.8, 0.8, 0.8, true) end
         else
             GameTooltip:AddLine("Point at or target any NPC to read your layer.", 0.8, 0.8, 0.8, true)
+        end
+        local wr = refreshLeft()
+        if wr then
+            GameTooltip:AddLine(("World refresh in %s: the game moves you to another layer. New layer now (in the window) does it right away, solo."):format(mmss(wr)), 1, 0.55, 0.25, true)
         end
         GameTooltip:AddLine("Click: the layer window · Drag: move", 0.6, 0.6, 0.6)
         GameTooltip:Show()
@@ -471,7 +691,9 @@ function ns.UpdateLabel()
     if c and zone then
         for _, r in ipairs(c:Rares(zone)) do if not r.same and r.hp > 0 then rareElsewhere = true break end end
     end
-    label.text:SetText(cur and (c:Label(zone, cur) .. (rareElsewhere and " |cffff8040•|r" or "")) or "|cff999999Layer ?|r")
+    local wr = refreshLeft()
+    local wrText = wr and (" |cffff8c40· refresh %s|r"):format(wr >= 60 and (math.ceil(wr / 60) .. "m") or (math.ceil(wr) .. "s")) or ""
+    label.text:SetText((cur and (c:Label(zone, cur) .. (rareElsewhere and " |cffff8040•|r" or "")) or "|cff999999Layer ?|r") .. wrText)
     label:SetWidth(math.max(70, label.text:GetStringWidth() + 16))
     label:Show()
 end
@@ -479,7 +701,7 @@ end
 ----------------------------------------------------------------------
 -- Start-up, slash commands, the Void hub
 ----------------------------------------------------------------------
--- "/vl hop B" or "/vl hop 7053-17"
+-- "/vl hop 17" or "/vl hop 7053-17" (a layer's name is its number after the dash)
 local function pairFor(c, zone, want)
     if not want or want == "" then return nil end
     if want:match("^%d+%-%d+$") then return want end
@@ -524,7 +746,7 @@ SlashCmdList.VOIDLAYER = function(msg)
     elseif cmd == "net" then
         if c.NetReport then c:NetReport() else say("the running layer core is older; update VoidSweep too.") end
     else
-        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [B] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat · |cffffd200/vl net|r players online + whisper counts")
+        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [17] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat · |cffffd200/vl net|r players online + whisper counts")
     end
 end
 
@@ -532,6 +754,7 @@ local boot = CreateFrame("Frame")
 boot:RegisterEvent("PLAYER_LOGIN")
 boot:SetScript("OnEvent", function()
     if not forever() then return end
+    restoreRefresh()
     ns.OnLayerCore(function(c)
         c:OnChange(function() ns.UpdateLabel(); UI_Update() end)
         ns.UpdateLabel()
