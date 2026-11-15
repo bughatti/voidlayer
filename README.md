@@ -37,7 +37,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 - **New layer now** in the window does it right away: solo, no group or helper needed. The game picks the layer
 
 ### Hop with one click
-- **Hop** next to any other layer in your zone, or **Hop to any**
+- **Hop** next to any other layer in your zone, or **Fresh layer**: it picks the layer where the mobs around you are most likely up, and with no reports any layer a Void player can bring you to
 - A Void player on that layer sends you a quick group invite. VoidLayer accepts only that one invite, checks that your layer really changed and leaves the group again. If someone doesn't answer or you didn't move, it tries the next one
 - **One hop every 5 minutes,** the game's own limit. The window counts it down
 - A layer whose Void players can't bring anyone over right now (in a group, in combat, or with helping turned off) says **busy**; hover it for why
@@ -45,8 +45,8 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### In a group, but on another layer than the leader
 - Joining a group puts you on the leader's layer, but not always: someone who joined earlier, or crossed a zone line, can end up on another one, and then the group can't see each other
-- VoidLayer notices: exactly when the leader runs VoidLayer too, otherwise when the leader is right next to you but you can't see them. It says so in chat once and shows a **Rejoin** button in the window
-- **Rejoin** leaves the group and gets you re-invited, which puts you on the leader's layer: automatic when the leader runs VoidLayer, otherwise the leader gets a whisper asking for the invite. Only you leave; never in combat or inside dungeons
+- VoidLayer notices: exactly when the leader runs VoidLayer too, otherwise when the leader is right next to you but you can't see them. It says so in chat once and points you to **Group hop**
+- **Group hop** (in a party or a raid led by someone else) leaves the group and gets you re-invited, which puts you on the leader's layer: automatic when the leader runs VoidLayer, otherwise the leader gets a whisper asking for the invite. Only you leave; never in combat or inside dungeons
 
 ### Rares on other layers
 - When a Void player sees a rare, every Void player in that zone hears about it: its name, which layer, how much health it has left, how long ago, and when it dies

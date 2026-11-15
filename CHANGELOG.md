@@ -1,5 +1,10 @@
 # VoidLayer Changelog
 
+## 0.4.0 — 2026-11-15
+
+- **Group hop** replaces "Hop to any": in a party or a raid led by someone else, one click puts you on your group's layer (you leave and get re-invited; automatic when the leader runs VoidLayer, else the leader gets a whisper). Greyed out when you're solo or the leader, with the reason on hover.
+- **Fresh layer** now also does what "Hop to any" did: it picks the layer where the mobs around you are most likely up, and when nobody reported anything, any layer a Void player can bring you to.
+
 ## 0.3.1 — 2026-11-14
 
 - **In a group but on another layer than the leader?** VoidLayer notices (exactly, when the leader runs VoidLayer too; otherwise when the leader is right next to you but you can't see them), says so in chat and shows a **Rejoin** button. One click leaves the group and gets you re-invited, which puts you on the leader's layer: automatic with VoidLayer on the leader, otherwise the leader gets a whisper asking for the invite. Only you leave; never in combat or inside dungeons.

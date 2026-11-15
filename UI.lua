@@ -403,9 +403,19 @@ local function build()
 
     -- one row of three (the user, 2026-11-14: "the box is growing, we need to clean it up")
     local BW = math.floor((W - 26) / 3)
-    f.any = button(f, "Hop to any", BW)
-    f.any:SetScript("OnClick", function() local c = core(); if c then c:Start(nil) end end)
-    tip(f.any, "Hop to any other layer", "Handy when a rare or a node is taken on yours: any Void player on another layer in this zone brings you over.")
+    -- Group hop (the user, 2026-11-15: "a group hop which is tied only to the group your in, or a
+    -- raid", replacing "Hop to any", which "Fresh layer" now covers): onto your group leader's layer
+    f.any = button(f, "Group hop", BW)
+    f.any:SetScript("OnClick", function() local c = core(); if c and c.Rejoin then c:Rejoin() end end)
+    f.any:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine("Group hop", 1, 1, 1)
+        GameTooltip:AddLine("Onto your group's layer, in a party or a raid: joining a group puts you on its leader's layer, so this leaves the group and gets you re-invited. With VoidLayer on the leader it happens by itself in a second or two; without it, the leader gets a whisper asking for the invite. Only you leave, the group stays. Not in combat or inside dungeons.", 0.8, 0.8, 0.8, true)
+        local why = self.why
+        if why then GameTooltip:AddLine(why, 1, 0.82, 0, true) end
+        GameTooltip:Show()
+    end)
+    f.any:SetScript("OnLeave", function() GameTooltip:Hide() end)
     -- fresh camp (VoidLayerCore section 5): a layer where the spot you're standing on wasn't cleared lately
     f.fresh = button(f, "Fresh layer", BW)
     f.fresh:SetScript("OnClick", function() local c = core(); if c and c.StartFresh then c:StartFresh() end end)
@@ -413,6 +423,7 @@ local function build()
         local c = core()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine("Fresh layer here", 1, 1, 1)
+        GameTooltip:AddLine("Hops you to another layer: the one where the mobs around you are most likely up. With no reports, any layer a Void player can bring you to (it was Hop to any).", 0.9, 0.9, 0.9, true)
         GameTooltip:AddLine("Cleared this spot? A hop doesn't move you: the world around you becomes the other layer's copy, where these mobs may still be up. This picks the layer where nobody reported clearing this spot, or reported it longest ago, and skips one you cleared it on yourself in the last 10 minutes. Not a promise: only Void players report clears.", 0.8, 0.8, 0.8, true)
         local cur, zone
         if c then cur, zone = c:Here() end
@@ -569,13 +580,13 @@ UI_Update = function()
             local key = tostring(g.leader) .. tostring(g.pair)
             if ns.groupWarned ~= key then
                 ns.groupWarned = key
-                say(("you're not on %s's layer: |cffffd200Rejoin|r in the VoidLayer window fixes it."):format(g.leader or "the leader"))
+                say(("you're not on %s's layer: |cffffd200Group hop|r in the VoidLayer window fixes it."):format(g.leader or "the leader"))
             end
         end
         f.grp:ClearAllPoints(); f.grp:SetPoint("TOPLEFT", 10, y - 4)
         f.grp:SetText(text)
         f.grpBtn:ClearAllPoints(); f.grpBtn:SetPoint("TOPRIGHT", -10, y)
-        f.grpBtn:SetShown(not rj)
+        f.grpBtn:SetShown(false)   -- the row's Group hop does it now
         f.grpBtn:SetEnabled(not InCombatLockdown())
         f.grp:Show()
         y = y - math.max(24, f.grp:GetStringHeight() + 8)
@@ -696,7 +707,17 @@ UI_Update = function()
     f.any:ClearAllPoints(); f.any:SetPoint("TOPLEFT", 10, y)
     f.fresh:ClearAllPoints(); f.fresh:SetPoint("LEFT", f.any, "RIGHT", 3, 0)
     f.refresh:ClearAllPoints(); f.refresh:SetPoint("LEFT", f.fresh, "RIGHT", 3, 0)
-    f.any:SetEnabled(c ~= nil and not blocked and cur ~= nil)
+    -- Group hop: in a group led by someone else, out of combat, not inside, not already rejoining
+    local lead = UnitIsGroupLeader("player")
+    if issecretvalue and issecretvalue(lead) then lead = false end
+    local rejoining = c and c.Rejoining and c:Rejoining()
+    local why = (not IsInGroup()) and "Only in a party or a raid."
+        or lead and "You lead this group: the others use Group hop to come to your layer."
+        or IsInInstance() and "Not inside a dungeon or raid."
+        or InCombatLockdown() and "Not in combat."
+        or rejoining and "Already on its way." or nil
+    f.any.why = why
+    f.any:SetEnabled(c ~= nil and c.Rejoin ~= nil and why == nil)
     local left = (c and zone) and c:AskLeft(zone) or 0
     f.refresh:SetEnabled(c ~= nil and zone ~= nil and left == 0)
     f.refresh:SetText(left > 0 and ("Refresh %d:%02d"):format(math.floor(left / 60), math.floor(left % 60)) or "Refresh")
