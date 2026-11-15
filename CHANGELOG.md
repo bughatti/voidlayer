@@ -1,5 +1,11 @@
 # VoidLayer Changelog
 
+## 0.3.1 — 2026-11-14
+
+- **In a group but on another layer than the leader?** VoidLayer notices (exactly, when the leader runs VoidLayer too; otherwise when the leader is right next to you but you can't see them), says so in chat and shows a **Rejoin** button. One click leaves the group and gets you re-invited, which puts you on the leader's layer: automatic with VoidLayer on the leader, otherwise the leader gets a whisper asking for the invite. Only you leave; never in combat or inside dungeons.
+- **The quietest layer.** Next to "Players seen" the window now says which layer of your zone is quietest: Void players on other layers send how many players they've seen there, and the layer with the fewest wins (or "yours", when yours is). Each layer in the list shows its count too. Only layers with a Void player on them can be compared.
+- **A tighter window:** the four settings moved behind the gear in the title bar, the three buttons share one row, the rares section only shows when there are rares, and the online count sits in the "Other layers" header.
+
 ## 0.3.0 — 2026-11-14
 
 - **Fixed: two players on the same layer could see different layer names.** Tested with two players side by side on one layer: only the first number in the game's id is the layer; the second one counts up separately for every player. Layers are now named by that first number ("Layer 6832"), so everyone on a layer sees the same name, and hops, rares, zone links and the layer count all go by it. Older VoidLayer and VoidSweep versions still work with this one.

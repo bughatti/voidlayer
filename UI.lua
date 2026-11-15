@@ -95,18 +95,6 @@ local function tip(frame, title, body)
     frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
-local function check(parent, label, body, get, set)
-    local c = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-    c:SetSize(22, 22)
-    c.text = c:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    c.text:SetPoint("LEFT", c, "RIGHT", 2, 0)
-    c.text:SetText(label)
-    c:SetScript("OnClick", function(self) set(self:GetChecked() and true or false) end)
-    tip(c, label, body)
-    c.get = get
-    return c
-end
-
 local function header(parent, text)
     local h = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     h:SetTextColor(A[1], A[2], A[3])
@@ -206,11 +194,33 @@ function ns.PlayersSeen()
     myFaction = myFaction or UnitFactionGroup("player")
     return n, e, myFaction == "Horde" and "Alliance" or "Horde"
 end
-local function seenText(long)
+-- the network asks VoidLayer for this count when it answers a layer question (VoidLayerCore "S")
+_G.VoidLayerSeenCount = function() return (ns.PlayersSeen()) end
+
+-- The quietest layer of this zone we know of (the user, 2026-11-14: "what if under that we had layer
+-- with least amount of seen players"): each Void player on another layer sends its own count with
+-- its census answer; the highest count per layer is used (each is a minimum). Yours wins a tie.
+-- Layers no Void player counted are unknown, not empty. nil when there's nothing to compare.
+function ns.Quietest(c, zone, cur)
+    local counts = c and c.SeenCounts and c:SeenCounts(zone) or {}
+    local best, bn
+    for pair, n in pairs(counts) do
+        if pair ~= cur and (not bn or n < bn or (n == bn and pair < best)) then best, bn = pair, n end
+    end
+    if not best then return nil end
+    local mine = ns.PlayersSeen()
+    if mine <= bn then return "yours", mine, bn end
+    return best, bn, mine
+end
+
+local function seenText(long, c, zone, cur)
     local n, e, other = ns.PlayersSeen()
-    if n == 0 then return long and "Players seen on this layer: none yet (last 15 min)" or nil end
-    return ("Players seen on this layer: |cffffffff%d|r%s%s"):format(n,
-        e > 0 and (" (|cffff6060%d %s|r)"):format(e, other) or "", long and " · last 15 min" or "")
+    local q, qn = ns.Quietest(c, zone, cur)
+    local quiet = q and (q == "yours" and " · quietest: |cff33ff33yours|r"
+        or (" · quietest: |cffffd200%s|r (%d)"):format(c:Label(zone, q), qn)) or ""
+    if n == 0 then return long and ("Players seen: none yet" .. quiet) or nil end
+    return ("Players seen: |cffffffff%d|r%s%s"):format(n,
+        e > 0 and (" (|cffff6060%d %s|r)"):format(e, other) or "", quiet)
 end
 -- "Same layer as The Barrens 88": your layer's numbers in other zones, from YOUR zone crossings
 -- (VoidLayerCore section 4). Other Void players' crossings follow, grey: true for them, and the game
@@ -307,7 +317,7 @@ local function build()
     f.title:SetPoint("TOPLEFT", 10, -8)
     f.title:SetTextColor(A[1], A[2], A[3])
     f.title:SetJustifyH("LEFT")
-    f.title:SetWidth(W - 40)
+    f.title:SetWidth(W - 60)   -- room for the gear and the close button
     f.title:SetWordWrap(false)
     local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
     close:SetSize(22, 22)
@@ -324,15 +334,16 @@ local function build()
     -- hover only: motion events, so a drag on this line still moves the window
     if f.seenBox.EnableMouseMotion then f.seenBox:EnableMouseMotion(true) else f.seenBox:EnableMouse(true) end
     f.seen = f.seenBox:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    f.seen:SetPoint("LEFT")
+    f.seen:SetPoint("TOPLEFT")
     f.seen:SetJustifyH("LEFT")
+    f.seen:SetWidth(W - 20)
     f.seen:SetTextColor(0.8, 0.8, 0.8)
     -- the same layer in other zones (it has a different number in each)
     f.span = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     f.span:SetJustifyH("LEFT")
     f.span:SetWidth(W - 20)
     tip(f.seenBox, "Players seen on this layer",
-        "Every player your nameplates, target or mouseover picked up in the last 15 minutes: you only ever see players on your own layer, so they're all on it. A minimum, not everyone: the game gives addons no full count. Turn on friendly player nameplates to count more. Starts over when your layer or zone changes.")
+        "Every player your nameplates, target or mouseover picked up in the last 15 minutes: you only ever see players on your own layer, so they're all on it. A minimum, not everyone: the game gives addons no full count. Turn on friendly player nameplates to count more. Starts over when your layer or zone changes.\n\nQuietest: the Void players on other layers of this zone send their own count when you Refresh; the layer with the fewest players seen. Only layers with a Void player on them can be compared.")
 
     -- world refresh coming: the countdown and "New layer now" (only shown while one is pending)
     f.wr = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -341,6 +352,16 @@ local function build()
     f.wr:SetTextColor(1, 0.55, 0.25)
     f.wrBtn = button(f, "New layer now", 110)
     f.wrBtn:SetScript("OnClick", function() ns.RefreshNow() end)
+
+    -- in a group, not on the leader's layer: Rejoin (leave + the leader re-invites you onto theirs)
+    f.grp = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    f.grp:SetJustifyH("LEFT")
+    f.grp:SetWidth(W - 100)
+    f.grp:SetTextColor(1, 0.55, 0.25)
+    f.grpBtn = button(f, "Rejoin", 80)
+    f.grpBtn:SetScript("OnClick", function() local c = core(); if c and c.Rejoin then c:Rejoin() end end)
+    tip(f.grpBtn, "Rejoin the group",
+        "Joining a group puts you on its leader's layer. This leaves the group and gets you re-invited: with VoidLayer on the leader it happens by itself in a second or two; without it, the leader gets a whisper asking for the invite. Only you leave, the group stays. Not in combat or inside dungeons.")
     tip(f.wrBtn, "New layer now",
         "The game has a world refresh coming for you, which moves you to another layer. This does it right away: solo, no group or host needed. The game picks the layer. Out of combat only.")
 
@@ -380,11 +401,13 @@ local function build()
     f.raresEmpty:SetJustifyH("LEFT")
     f.raresEmpty:SetWidth(W - 28)
 
-    f.any = button(f, "Hop to any layer", 140)
+    -- one row of three (the user, 2026-11-14: "the box is growing, we need to clean it up")
+    local BW = math.floor((W - 26) / 3)
+    f.any = button(f, "Hop to any", BW)
     f.any:SetScript("OnClick", function() local c = core(); if c then c:Start(nil) end end)
     tip(f.any, "Hop to any other layer", "Handy when a rare or a node is taken on yours: any Void player on another layer in this zone brings you over.")
     -- fresh camp (VoidLayerCore section 5): a layer where the spot you're standing on wasn't cleared lately
-    f.fresh = button(f, "Fresh layer here", W - 20)
+    f.fresh = button(f, "Fresh layer", BW)
     f.fresh:SetScript("OnClick", function() local c = core(); if c and c.StartFresh then c:StartFresh() end end)
     f.fresh:SetScript("OnEnter", function(self)
         local c = core()
@@ -400,7 +423,7 @@ local function build()
         GameTooltip:Show()
     end)
     f.fresh:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    f.refresh = button(f, "Refresh", 140)
+    f.refresh = button(f, "Refresh", BW)
     f.refresh:SetScript("OnClick", function()
         local c = core()
         local zone; if c then zone = select(2, c:Here()) end
@@ -413,20 +436,41 @@ local function build()
     f.status:SetJustifyH("LEFT")
     f.status:SetWidth(W - 20)
 
+    -- the four settings live behind the gear in the title bar now (they took four rows every time
+    -- the window opened; the user, 2026-11-14: "clean it up and tighten it")
     f.opts = {
-        check(f, "Help others change layer",
-            "When a Void player on your layer asks, you send them a quick group invite; the group ends on its own after 3 minutes. Only while you're solo, out of combat and outside dungeons, at most once every 2 minutes. Every hop works because someone helps.",
-            function() local c = core(); return c and c:HostingOn() end, function(on) local c = core(); if c then c:SetHosting(on) end end),
-        check(f, "Rare alerts",
-            "A rare up on another layer of your zone asks \"Hop there?\"; one on your layer gets a line in chat.",
-            function() local c = core(); return c and c:PopupsOn() end, function(on) local c = core(); if c then c:SetPopups(on) end end),
-        check(f, "Stay grouped after a hop",
-            "Only needed if leaving the group sends you back to your old layer; VoidLayer turns this on by itself when it sees that happen.",
-            function() local c = core(); return c and c:StayOn() end, function(on) local c = core(); if c then c:SetStay(on) end end),
-        check(f, "Show my layer under the minimap",
-            "Click it to open this window. Shift-drag to move it.",
-            function() return char().label ~= false end, function(on) char().label = on; ns.UpdateLabel() end),
+        { label = "Help others change layer",
+          body = "When a Void player on your layer asks, you send them a quick group invite; the group ends on its own after 3 minutes. Only while you're solo, out of combat and outside dungeons, at most once every 2 minutes. Every hop works because someone helps.",
+          get = function() local c = core(); return c and c:HostingOn() end, set = function(on) local c = core(); if c then c:SetHosting(on) end end },
+        { label = "Rare alerts",
+          body = "A rare up on another layer of your zone asks \"Hop there?\"; one on your layer gets a line in chat.",
+          get = function() local c = core(); return c and c:PopupsOn() end, set = function(on) local c = core(); if c then c:SetPopups(on) end end },
+        { label = "Stay grouped after a hop",
+          body = "Only needed if leaving the group sends you back to your old layer; VoidLayer turns this on by itself when it sees that happen.",
+          get = function() local c = core(); return c and c:StayOn() end, set = function(on) local c = core(); if c then c:SetStay(on) end end },
+        { label = "Show my layer under the minimap",
+          body = "Click it to open this window. Drag to move it.",
+          get = function() return char().label ~= false end, set = function(on) char().label = on; ns.UpdateLabel() end },
     }
+    f.gear = CreateFrame("Button", nil, f)
+    f.gear:SetSize(16, 16)
+    f.gear:SetPoint("TOPRIGHT", -24, -5)
+    f.gear:SetNormalTexture("Interface\\Buttons\\UI-OptionsButton")
+    f.gear:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    f.gear:SetScript("OnClick", function(self)
+        if not (MenuUtil and MenuUtil.CreateContextMenu) then return end
+        MenuUtil.CreateContextMenu(self, function(_, root)
+            root:CreateTitle("VoidLayer")
+            for _, o in ipairs(f.opts) do
+                local cb = root:CreateCheckbox(o.label, function() return o.get() and true or false end,
+                    function() o.set(not o.get()) end)
+                if cb and cb.SetTooltip then
+                    cb:SetTooltip(function(tt) GameTooltip_SetTitle(tt, o.label); GameTooltip_AddNormalLine(tt, o.body) end)
+                end
+            end
+        end)
+    end)
+    tip(f.gear, "Options", "Help others change layer, rare alerts, stay grouped after a hop, the label under the minimap.")
 
     f:SetScript("OnShow", function()
         local c = core()
@@ -473,6 +517,8 @@ UI_Update = function()
     local cur, zone
     if c then cur, zone = c:Here() end
     f.title:SetText("VoidLayer  ·  " .. zoneName(zone))
+    -- the online count rides in the "Other layers" header (in the title it got cut off, live 11-14)
+    local online = c and c:Online()
 
     if not forever() then
         f.mine:SetText("Layers are a WoW Forever thing.")
@@ -483,15 +529,19 @@ UI_Update = function()
         f.mine:SetText(("You're on |cffffd200%s|r  |cff777777%s|r%s"):format(c:Label(zone, cur), cur,
             here > 0 and ("  ·  %d Void player%s here too"):format(here, here == 1 and "" or "s") or ""))
     else
-        f.mine:SetText("Your layer: |cff999999not known yet|r · point at or target any NPC")
+        f.mine:SetText("Your layer: |cff999999not known yet|r (target any NPC)")
     end
 
-    local y = -50
+    -- every line goes below the real height of the one above (live 11-14: "not known yet ... any NPC"
+    -- wrapped and ran into the "Other layers" header, which sat at a fixed spot)
+    local y = -28 - math.max(14, f.mine:GetStringHeight()) - 3
     if forever() and c and cur then
-        f.seenBox:ClearAllPoints(); f.seenBox:SetPoint("TOPLEFT", 10, -44)
-        f.seen:SetText(seenText(true))
+        f.seenBox:ClearAllPoints(); f.seenBox:SetPoint("TOPLEFT", 10, y)
+        f.seen:SetText(seenText(true, c, zone, cur))
+        local sh = math.max(12, f.seen:GetStringHeight())
+        f.seenBox:SetHeight(sh)
         f.seenBox:Show()
-        y = y - 14
+        y = y - sh - 2
     else
         f.seenBox:Hide()
     end
@@ -504,6 +554,35 @@ UI_Update = function()
     else
         f.span:Hide()
     end
+    -- in a group on another layer than the leader (or waiting for the re-invite)
+    local g = (forever() and c and c.GroupLayer) and c:GroupLayer() or nil
+    local rj = c and c.Rejoining and c:Rejoining()
+    if rj or (g and g.differs) then
+        local text
+        if rj then
+            text = rj.phase == "asking" and ("Asking %s for a re-invite..."):format(rj.leader)
+                or ("Waiting for %s's invite..."):format(rj.leader)
+        else
+            text = ("Not on %s's layer%s"):format(g.leader or "the leader",
+                g.how == "exact" and g.pair and (" (%s)"):format(c:Label(zone, g.pair)) or "")
+            -- one chat line per leader and layer, so you know without the window open
+            local key = tostring(g.leader) .. tostring(g.pair)
+            if ns.groupWarned ~= key then
+                ns.groupWarned = key
+                say(("you're not on %s's layer: |cffffd200Rejoin|r in the VoidLayer window fixes it."):format(g.leader or "the leader"))
+            end
+        end
+        f.grp:ClearAllPoints(); f.grp:SetPoint("TOPLEFT", 10, y - 4)
+        f.grp:SetText(text)
+        f.grpBtn:ClearAllPoints(); f.grpBtn:SetPoint("TOPRIGHT", -10, y)
+        f.grpBtn:SetShown(not rj)
+        f.grpBtn:SetEnabled(not InCombatLockdown())
+        f.grp:Show()
+        y = y - math.max(24, f.grp:GetStringHeight() + 8)
+    else
+        f.grp:Hide(); f.grpBtn:Hide()
+    end
+
     local wrLeft = forever() and refreshLeft()
     if wrLeft then
         f.wr:ClearAllPoints(); f.wr:SetPoint("TOPLEFT", 10, y - 4)
@@ -521,15 +600,20 @@ UI_Update = function()
     f.layersH:ClearAllPoints(); f.layersH:SetPoint("TOPLEFT", 10, y); y = y - 16
     -- how many layers this zone has, as far as Void players saw in the last 30 minutes
     local nSeen = (c and zone and c.LayersSeen) and c:LayersSeen(zone) or 0
-    f.layersH:SetText(nSeen > 1 and ("Other layers here  |cff888888· %d layers seen in this zone (30 min)|r"):format(nSeen)
-        or "Other layers here")
+    local extra = {}
+    if nSeen > 1 then extra[#extra + 1] = ("%d layers here (30 min)"):format(nSeen) end
+    if online then extra[#extra + 1] = ("%d Void online"):format(online) end
+    f.layersH:SetText("Other layers" .. (#extra > 0 and ("  |cff888888· " .. table.concat(extra, " · ") .. "|r") or ""))
     local list = (c and zone) and otherLayers(c, zone, cur) or {}
+    local seenCounts = (c and zone and c.SeenCounts) and c:SeenCounts(zone) or {}
     for i, r in ipairs(f.layerRows) do
         local l = list[i]
         if l then
             r:ClearAllPoints(); r:SetPoint("TOPLEFT", 10, y - (i - 1) * ROW_H)
             r.a:SetText(c:Label(zone, l.pair))
             local what = l.n > 0 and ("%d Void player%s"):format(l.n, l.n == 1 and "" or "s") or ""
+            local sc = seenCounts[l.pair]   -- players a Void player there has seen on it
+            if sc then what = (what ~= "" and what .. " · " or "") .. ("%d seen"):format(sc) end
             if l.n > 0 and l.hosts == 0 then what = what .. " |cff888888· busy|r" end   -- why: in the row tooltip
             if l.rare then what = (what ~= "" and what .. " · " or "") .. "|cffff8040rare up|r" end
             -- your spot on that layer (fresh camp): cleared lately = no point hopping there to farm it
@@ -557,7 +641,7 @@ UI_Update = function()
     if shown == 0 then
         f.layersEmpty:ClearAllPoints(); f.layersEmpty:SetPoint("TOPLEFT", 14, y - 2)
         f.layersEmpty:SetText(f.asking and GetTime() - f.asking < 7 and "Asking the Void players here..."
-            or "No other layers known here yet. Refresh asks the Void players in this zone.")
+            or "None known yet: Refresh asks the Void players here.")
         f.layersEmpty:Show()
         y = y - ROW_H - 4
     else
@@ -565,13 +649,15 @@ UI_Update = function()
         y = y - shown * ROW_H - 6
     end
 
-    -- rares
-    f.raresH:ClearAllPoints(); f.raresH:SetPoint("TOPLEFT", 10, y); y = y - 16
+    -- rares: the section only shows when there are some (it took two lines to say "none")
     local rares = (c and zone) and c:Rares(zone) or {}
     -- and rares up next door on YOUR layer (linked across zones): walk over, no hop
     if c and zone and c.RaresNextDoor then
         for _, x in ipairs(c:RaresNextDoor()) do rares[#rares + 1] = x end
     end
+    f.raresH:ClearAllPoints(); f.raresH:SetPoint("TOPLEFT", 10, y)
+    f.raresH:SetShown(#rares > 0)
+    if #rares > 0 then y = y - 16 end
     for i, r in ipairs(f.rareRows) do
         local x = rares[i]
         if x then
@@ -602,49 +688,34 @@ UI_Update = function()
         end
     end
     local rs = math.min(#rares, RARE_ROWS)
-    if rs == 0 then
-        f.raresEmpty:ClearAllPoints(); f.raresEmpty:SetPoint("TOPLEFT", 14, y - 2)
-        f.raresEmpty:SetText("None seen by Void players in the last 10 minutes (here, or next door on your layer).")
-        f.raresEmpty:Show()
-        y = y - ROW_H - 4
-    else
-        f.raresEmpty:Hide()
-        y = y - rs * ROW_H - 6
-    end
+    f.raresEmpty:Hide()
+    if rs > 0 then y = y - rs * ROW_H - 6 end
 
-    -- buttons
+    -- buttons: one row
     y = y - 4
     f.any:ClearAllPoints(); f.any:SetPoint("TOPLEFT", 10, y)
-    f.refresh:ClearAllPoints(); f.refresh:SetPoint("TOPRIGHT", -10, y)
+    f.fresh:ClearAllPoints(); f.fresh:SetPoint("LEFT", f.any, "RIGHT", 3, 0)
+    f.refresh:ClearAllPoints(); f.refresh:SetPoint("LEFT", f.fresh, "RIGHT", 3, 0)
     f.any:SetEnabled(c ~= nil and not blocked and cur ~= nil)
     local left = (c and zone) and c:AskLeft(zone) or 0
     f.refresh:SetEnabled(c ~= nil and zone ~= nil and left == 0)
-    f.refresh:SetText(left > 0 and ("Refresh (%d:%02d)"):format(math.floor(left / 60), math.floor(left % 60)) or "Refresh")
-    y = y - 26
-    f.fresh:ClearAllPoints(); f.fresh:SetPoint("TOPLEFT", 10, y)
+    f.refresh:SetText(left > 0 and ("Refresh %d:%02d"):format(math.floor(left / 60), math.floor(left % 60)) or "Refresh")
     f.fresh:SetEnabled(c ~= nil and c.StartFresh ~= nil and not blocked and cur ~= nil)
-    y = y - 26
+    y = y - 24
 
+    -- a status line only when there's something to say (blocked, a hop under way, why not here);
+    -- the online count is in the title
     local status = c and c:Status()
     if not status and c then
         status = c:Blocked()
         if status == "A hop is under way." then status = nil end
-        if not status then
-            local online = c:Online()
-            local why = c:BlockReason()
-            status = why or (online and ("%d other Void player%s of your faction online."):format(online, online == 1 and "" or "s"))
-        end
+        if not status then status = c:BlockReason() end
     end
-    f.status:ClearAllPoints(); f.status:SetPoint("TOPLEFT", 10, y)
+    f.status:ClearAllPoints(); f.status:SetPoint("TOPLEFT", 10, y - 2)
     f.status:SetText(status or "")
+    f.status:SetShown(status ~= nil)
     if status then y = y - (f.status:GetStringHeight() + 6) end
-
-    for i, o in ipairs(f.opts) do
-        o:ClearAllPoints(); o:SetPoint("TOPLEFT", 6, y - (i - 1) * 22)
-        o:SetChecked(o.get() and true or false)
-    end
-    y = y - #f.opts * 22
-    f:SetHeight(-y + 8)
+    f:SetHeight(-y + 6)
 end
 
 local function toggle()
@@ -683,7 +754,7 @@ local function buildLabel()
             GameTooltip:AddLine(("%s  |cff777777%s|r"):format(c:Label(zone, cur), cur), 1, 1, 1)
             local s = c:Summary(zone)
             if s then GameTooltip:AddLine(s, 0.8, 0.8, 0.8, true) end
-            local seen = seenText(false)
+            local seen = seenText(false, c, zone, cur)
             if seen then GameTooltip:AddLine(seen, 0.8, 0.8, 0.8) end
             local span = ns.SpanText(c, zone, cur)
             if span then GameTooltip:AddLine(span, 0.8, 0.8, 0.8, true) end
