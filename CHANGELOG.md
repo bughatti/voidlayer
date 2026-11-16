@@ -1,5 +1,9 @@
 # VoidLayer Changelog
 
+## 0.4.1 — 2026-11-15
+
+- **A Hop nobody could do now says why:** how many Void players on that layer were asked, and for each, whether they were in a group or fighting, had moved off that layer, had helping others turned off, or didn't answer. A player who moved off is no longer offered for that layer.
+
 ## 0.4.0 — 2026-11-15
 
 - **Group hop** replaces "Hop to any": in a party or a raid led by someone else, one click puts you on your group's layer (you leave and get re-invited; automatic when the leader runs VoidLayer, else the leader gets a whisper). Greyed out when you're solo or the leader, with the reason on hover.
