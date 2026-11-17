@@ -453,6 +453,9 @@ local function build()
         { label = "Help others change layer",
           body = "When a Void player on your layer asks, you send them a quick group invite; the group ends on its own after 3 minutes. Only while you're solo, out of combat and outside dungeons, at most once every 2 minutes. Every hop works because someone helps.",
           get = function() local c = core(); return c and c:HostingOn() end, set = function(on) local c = core(); if c then c:SetHosting(on) end end },
+        { label = "Host from my Group Finder listing",
+          body = "Post a Group Finder listing (Custom, a note with the word \"layer\", e.g. Layer swap - whisper inv). While it's up, anyone who whispers you inv, layer or swap, or clicks Group Invite on it, gets an invite onto your layer: no addon needed on their side. Same limits as helping. Friends' and guildmates' invites are never touched.",
+          get = function() local c = core(); return c and c.FinderOn and c:FinderOn() end, set = function(on) local c = core(); if c and c.SetFinder then c:SetFinder(on) end end },
         { label = "Rare alerts",
           body = "A rare up on another layer of your zone asks \"Hop there?\"; one on your layer gets a line in chat.",
           get = function() local c = core(); return c and c:PopupsOn() end, set = function(on) local c = core(); if c then c:SetPopups(on) end end },
@@ -731,6 +734,9 @@ UI_Update = function()
         status = c:Blocked()
         if status == "A hop is under way." then status = nil end
         if not status then status = c:BlockReason() end
+        if not status and c.FinderListed and c:FinderListed() then
+            status = "|cff33ff33Hosting from your Group Finder listing:|r whisper inv, layer or swap and you're brought here."
+        end
     end
     f.status:ClearAllPoints(); f.status:SetPoint("TOPLEFT", 10, y - 2)
     f.status:SetText(status or "")
@@ -858,10 +864,29 @@ SlashCmdList.VOIDLAYER = function(msg)
         c:Start(p)
     elseif cmd == "host" then c:SetHosting(not c:HostingOn())
     elseif cmd == "layers" then c:Report()
+    elseif cmd == "stats" then
+        -- hop health (2026-11-16): how your hops ended and how hosting went, this character
+        if not c.HopStats then say("the running layer core is older; update VoidSweep too.") return end
+        local t, log = c:HopStats()
+        local function n(k) return tonumber(t[k]) or 0 end
+        -- one "start" per hop however many helpers it tried; a move that was sent back isn't a success (Sol review)
+        local tried = n("start")
+        local good = math.max(0, n("moved") - n("reverted"))
+        local secs, cnt, asked = 0, 0, 0
+        for _, e in ipairs(log) do
+            if e.r == "moved" and tonumber(e.s) then secs, cnt, asked = secs + e.s, cnt + 1, asked + (tonumber(e.a) or 1) end
+        end
+        say(("hops on this character: %d tried, |cff33ff33%d worked|r%s%s."):format(tried, good,
+            tried > 0 and (" (%d%%)"):format(math.floor(math.min(good, tried) * 100 / tried + 0.5)) or "",
+            cnt > 0 and (", %d s on average, %.1f helpers asked"):format(math.floor(secs / cnt + 0.5), asked / cnt) or ""))
+        say(("didn't work: nobody could %d, move not confirmed %d, group ended %d, sent back %d, cancelled %d. Helpers who didn't move you (tried the next) %d. No helper on another layer at all: %d (fresh: %d).")
+            :format(n("nobody"), n("unconfirmed"), n("groupEnded"), n("reverted"), n("cancelled"), n("joinedNoMove"), n("noHelper"), n("noFresh")))
+        say(("you helped: %d came over, %d didn't accept; from your Group Finder listing %d came, %d didn't.")
+            :format(n("hostCame"), n("hostNoShow"), n("hostFinderCame"), n("hostFinderNoShow")))
     elseif cmd == "net" then
         if c.NetReport then c:NetReport() else say("the running layer core is older; update VoidSweep too.") end
     else
-        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [17] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat · |cffffd200/vl net|r players online + whisper counts")
+        say("|cffffd200/vl|r the window · |cffffd200/vl hop|r [17] hop to another layer · |cffffd200/vl host|r help others change layer on/off · |cffffd200/vl layers|r the layers here in chat · |cffffd200/vl net|r players online + whisper counts · |cffffd200/vl stats|r how your hops went")
     end
 end
 
@@ -882,12 +907,6 @@ VoidHubLaunchers = VoidHubLaunchers or {}
 VoidHubLaunchers.VoidLayer = { icon = "Interface\\Icons\\Spell_Arcane_Blink", onClick = function() toggle() end }
 
 VoidHubToggles = VoidHubToggles or {}
-table.insert(VoidHubToggles, {
-    id = "VoidLayer.host", group = "Layers", label = "Help others change layer",
-    tip = "WoW Forever: Void players on your layer can ask you for a quick group invite (only while you're solo and out of combat; the group ends on its own).",
-    get = function() local c = core(); return c and c:HostingOn() or false end,
-    set = function(on) local c = core(); if c then c:SetHosting(on) end end,
-})
 table.insert(VoidHubToggles, {
     id = "VoidLayer.rares", group = "Layers", label = "Rare alerts",
     tip = "A rare up on another layer of your zone asks \"Hop there?\".",

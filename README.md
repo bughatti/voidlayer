@@ -39,9 +39,10 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 ### Hop with one click
 - **Hop** next to any other layer in your zone, or **Fresh layer**: it picks the layer where the mobs around you are most likely up, and with no reports any layer a Void player can bring you to
 - A Void player on that layer sends you a quick group invite. VoidLayer accepts only that one invite, checks that your layer really changed and leaves the group again. If someone doesn't answer or you didn't move, it tries the next one
+- **No clicks:** the invite you asked for is accepted on its own, and the game's tank / healer / damage window closes itself
 - **One hop every 5 minutes,** the game's own limit. The window counts it down
 - A layer whose Void players can't bring anyone over right now (in a group, in combat, or with helping turned off) says **busy**; hover it for why
-- **Works out of the box:** every VoidLayer player can bring others over unless they turn it off, so nobody has to post in chat or wait for a stranger to notice them. The more players run it, the more layers you can reach
+- **Works out of the box:** every Void addon player can bring others over unless they turn it off, so nobody has to post in chat or wait for a stranger to notice them. The more players run it, the more layers you can reach
 
 ### In a group, but on another layer than the leader
 - Joining a group puts you on the leader's layer, but not always: someone who joined earlier, or crossed a zone line, can end up on another one, and then the group can't see each other
@@ -57,12 +58,23 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 ### Helping others change layer
 - When a Void player on your layer asks, you send them a quick group invite. The group ends on its own after 3 minutes, and you get a line in chat each time
 - **Only while you're solo, out of combat and outside dungeons,** at most once every 2 minutes and 8 times an hour
-- **Help others change layer** behind the gear in the window (or the Void hub's quick switches) turns it off
+- **Help others change layer** behind the gear in the window turns it off. It's **one switch for every Void addon you have**: the Void hub's **Help Void layer hopping** does the same, and so do the boxes in VoidQuest's and VoidBounty's settings
+- **`/vl stats`** shows how your hops went and how many players you brought over
 
-### Its own network
-- VoidLayer players of your faction find each other through a hidden chat channel (one per faction: you can't group with the other faction anyway) with a password that changes every day, so nobody can take it over and lock players out for more than a day. Messages go by hidden addon whispers. No names are saved, and the only player who sees yours is the one whose group you join
-- **VoidSweep** players are on the same network, so they help you hop and share their rares too
-- The Void **Players online** box shows how many players are on the layer network right now
+### Host from your Group Finder listing (optional)
+- Turn on **Host from my Group Finder listing** behind the gear, then post a Group Finder listing (Custom, a note with the word "layer", e.g. **Layer swap - whisper inv**)
+- While it's up, anyone who whispers you **inv**, **layer** or **swap**, or clicks Group Invite on your listing, gets an invite onto your layer: **no addon needed on their side**
+- You never leave the group, so your listing stays yours (it follows the group). A guest still with you after a minute gets a **Remove** button for you to click
+- Same limits as helping: solo, out of combat, outside dungeons. Friends' and guildmates' invites are never touched
+
+### VoidNet: one network for every Void addon
+- VoidLayer, VoidSweep, VoidQuest, VoidGather, VoidBounty and VoidDungeon players of your faction find each other through **one** hidden chat channel (one per faction: you can't group with the other faction anyway). Its name and password change every hour, and it has backups
+- **Every one of them can bring you over**, not only VoidLayer players: the other Void addons carry the same layer helper, so the more Void players there are, the more layers you can reach
+- **Hard to break:** if someone takes the channel over, bans or kicks Void players or changes its password, everyone moves to a backup and that player is ignored for 24 hours. Nothing is shown as a list of names
+- Messages go by hidden addon whispers: like any whisper, the player who gets one can see which character sent it. Only the player whose group you join sees your name in game
+- **What's kept on your computer:** the Void players you heard from in the last 2 hours (names and a time, deleted after 2 hours, never shown or shared) and players marked for attacking the channel (24 hours)
+- Players on an older version are still reached through the old channel until they update
+- The Void **Players online** box shows **VoidNet** (every Void player online, each counted once) and **Layer helpers** under it
 
 ---
 
@@ -76,7 +88,8 @@ You rarely need them: click your layer under the minimap.
 | `/vl hop` | Hop to any other layer in your zone (`/vl hop 7054` for Layer 7054) |
 | `/vl host` | Help others change layer: on or off |
 | `/vl layers` | The layers in your zone, in chat |
-| `/vl net` | Check that messages to other VoidLayer players get through (and how many bounced) |
+| `/vl net` | Check that messages to other Void players get through (and how many bounced) |
+| `/vl stats` | How your hops went, and how many players you brought over |
 
 ---
 
@@ -100,7 +113,7 @@ You rarely need them: click your layer under the minimap.
 
 - **WoW Forever**
 - Standalone: nothing else to install
-- Works alongside **VoidSweep** (one shared network; only one of them does the work)
+- Works alongside **VoidSweep, VoidQuest, VoidGather, VoidBounty and VoidDungeon** (one shared network, VoidNet; only one of them does the work)
 
 ---
 
