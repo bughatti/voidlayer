@@ -2,6 +2,8 @@
 
 **Works on:** WoW Forever
 
+> **New: VoidNet.** All six Void network addons (VoidLayer, VoidSweep, VoidQuest, VoidGather, VoidBounty, VoidDungeon) now share one channel on WoW Forever, so you reach more players. Versions from before November 10, 2026 can't share at all: please update (the CurseForge app does it for you).
+
 **Beta:** new, and it gets better with every player who runs it: each one is someone you can hop to.
 
 **See which layer you're on, hop to another with one click, and know when a rare is up on a layer you're not on.**
