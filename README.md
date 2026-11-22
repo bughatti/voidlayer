@@ -43,7 +43,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 - A Void player on that layer sends you a quick group invite. VoidLayer accepts only that one invite, checks that your layer really changed and leaves the group again. If someone doesn't answer or you didn't move, it tries the next one
 - **No clicks:** the invite you asked for is accepted on its own, and the game's tank / healer / damage window closes itself
 - **One hop every 5 minutes,** the game's own limit. The window counts it down
-- A layer whose Void players can't bring anyone over right now (in a group, in combat, or with helping turned off) says **busy**; hover it for why
+- **Only layers you can actually get to:** a layer shows while a Void player there can bring you over. One who answers busy (in a group, in combat, or helping turned off) or doesn't answer drops out until they say they can again, and the layer leaves the list. At most 4 layers, so the window stays small
 - **Works out of the box:** every Void addon player can bring others over unless they turn it off, so nobody has to post in chat or wait for a stranger to notice them. The more players run it, the more layers you can reach
 
 ### In a group, but on another layer than the leader
@@ -53,9 +53,9 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### Rares on other layers
 - When a Void player sees a rare, every Void player in that zone hears about it: its name, which layer, how much health it has left, how long ago, and when it dies
-- **On another layer?** "Rare X is up on Layer 7054. Hop there?" One click, and the player who saw it brings you over
+- **On another layer?** "Rare X is up on Layer 7054. Hop there?" One click, and a Void player there brings you over. Asked only when someone there can
 - **On yours?** A line in chat with where it was seen
-- The window lists the rares up in your zone with a **Hop** button on each
+- In the window, a rare up on a layer you can get to shows in that layer's row, by name, with its **Hop**. **Rares on your layer** lists the ones you can walk to (at most 3)
 
 ### Helping others change layer
 - When a Void player on your layer asks, you send them a quick group invite. The group ends on its own after 3 minutes, and you get a line in chat each time

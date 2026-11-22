@@ -1,5 +1,11 @@
 # VoidLayer Changelog
 
+## 0.5.2 — 2026-11-21
+
+- **The window only offers layers you can get to.** A layer is listed while a Void player there can bring you over. Someone who answers busy (in a group, in combat, just helped someone) or doesn't answer drops out until they say they can again, so Hop no longer fails one layer after another.
+- **A smaller window:** at most 4 layers and 3 rares. A rare on a layer you can reach shows in that layer's row by name; **Rares on your layer** lists the ones you can walk to.
+- **"Hop there?"** for a rare on another layer only asks when someone there can bring you over.
+
 ## 0.5.1 — 2026-11-17
 
 - **Layer helping finds players faster (WoW Forever).** A layer question now reaches the Void players it asks in about a second instead of eleven, so Refresh and hops see the other layers right away. Same message rate over time, well under the game's limit.

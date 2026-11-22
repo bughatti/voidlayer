@@ -53,7 +53,9 @@ if not _G.__VoidBorderHook2 and hooksecurefunc and NineSliceUtil and NineSliceUt
 end
 
 local A = { 0, 0.78, 1 }   -- Void cyan
-local W, ROW_H, LAYER_ROWS, RARE_ROWS = 320, 20, 6, 6
+-- small on purpose (the user, 2026-11-21: "that box cant grow that way, it will get way to big"): at most 4 layers
+-- (only ones someone can bring you to) and 3 rares you can walk to
+local W, ROW_H, LAYER_ROWS, RARE_ROWS = 320, 20, 4, 3
 
 local function forever() return RegionalUniqueNamesEnabled ~= nil and RegionalUniqueNamesEnabled() == true end
 local function core() return _G.VoidLayerCore end
@@ -381,7 +383,7 @@ local function build()
     f.layersEmpty:SetJustifyH("LEFT")
     f.layersEmpty:SetWidth(W - 28)
 
-    f.raresH = header(f, "Rares up in this zone")
+    f.raresH = header(f, "Rares on your layer")
     f.rareRows = {}
     for i = 1, RARE_ROWS do
         local r = row(f)
@@ -503,21 +505,25 @@ local function build()
     return f
 end
 
+-- Only layers you can actually get to: a Void player there said they can bring you over (and hasn't since answered
+-- busy or gone quiet: VoidLayerCore drops those). The user, 2026-11-21, after four Hops to rare layers all failed
+-- ("Asked 1: 1 in a group, in combat or just helped someone"): "if that player is no longer reachable, it should go
+-- away". A rare up on such a layer rides in its row; rares on layers nobody can bring you to aren't shown.
 local function otherLayers(c, zone, cur)
     local out = {}
     for pair, n in pairs(c:Counts(zone)) do
-        if pair ~= cur then out[#out + 1] = { pair = pair, n = n, hosts = #c:Hosts(zone, pair) } end
+        local hosts = #c:Hosts(zone, pair)
+        if pair ~= cur and hosts > 0 then out[#out + 1] = { pair = pair, n = n, hosts = hosts } end
     end
-    -- layers only known from a rare count too
     for _, r in ipairs(c:Rares(zone)) do
         if r.pair ~= cur and r.hp > 0 then
-            local have
-            for _, l in ipairs(out) do if l.pair == r.pair then have = l end end
-            if have then have.rare = true else out[#out + 1] = { pair = r.pair, n = 0, hosts = 0, rare = true } end
+            for _, l in ipairs(out) do
+                if l.pair == r.pair then l.rares = l.rares or {}; l.rares[#l.rares + 1] = r end
+            end
         end
     end
     table.sort(out, function(a, b)
-        if (a.hosts > 0) ~= (b.hosts > 0) then return a.hosts > 0 end
+        if (a.rares ~= nil) ~= (b.rares ~= nil) then return a.rares ~= nil end   -- a rare up first
         if a.n ~= b.n then return a.n > b.n end
         return a.pair < b.pair
     end)
@@ -628,21 +634,24 @@ UI_Update = function()
             local what = l.n > 0 and ("%d Void player%s"):format(l.n, l.n == 1 and "" or "s") or ""
             local sc = seenCounts[l.pair]   -- players a Void player there has seen on it
             if sc then what = (what ~= "" and what .. " · " or "") .. ("%d seen"):format(sc) end
-            if l.n > 0 and l.hosts == 0 then what = what .. " |cff888888· busy|r" end   -- why: in the row tooltip
-            if l.rare then what = (what ~= "" and what .. " · " or "") .. "|cffff8040rare up|r" end
+            if l.rares then   -- the rare(s) up there, by name
+                local x = l.rares[1]
+                what = ("|cffff8040%s|r%s · %s"):format(x.name, #l.rares > 1 and (" +" .. (#l.rares - 1)) or "", what)
+            end
             -- your spot on that layer (fresh camp): cleared lately = no point hopping there to farm it
             local spot = c.SpotCleared and c:SpotCleared(zone, l.pair)
             if spot then what = (what ~= "" and what .. " · " or "") .. ("|cffcc6666spot cleared %s ago|r"):format(ago(spot)) end
             r.b:SetText(what)
             r.hop.pair = l.pair
-            r.hop:SetShown(l.hosts > 0 or l.rare)
+            r.hop:SetShown(true)   -- every row listed has someone who can bring you over
             r.hop:SetEnabled(not blocked)
             r:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                 GameTooltip:AddLine(c:Label(zone, l.pair) .. "  |cff777777" .. l.pair .. "|r", 1, 1, 1)
-                GameTooltip:AddLine(l.hosts > 0 and "A Void player there can bring you over." or (l.n > 0
-                    and "The Void player there can't bring you over right now: in a group, in combat, busy, or Help others is off. Refresh in a few minutes."
-                    or "Nobody there has said they can bring you over yet."), 0.8, 0.8, 0.8, true)
+                GameTooltip:AddLine("A Void player there can bring you over.", 0.8, 0.8, 0.8, true)
+                for _, x in ipairs(l.rares or {}) do
+                    GameTooltip:AddLine(("Rare up: %s, %s ago"):format(x.name, ago(x.age)), 1, 0.5, 0.25)
+                end
                 GameTooltip:Show()
             end)
             r:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -655,7 +664,7 @@ UI_Update = function()
     if shown == 0 then
         f.layersEmpty:ClearAllPoints(); f.layersEmpty:SetPoint("TOPLEFT", 14, y - 2)
         f.layersEmpty:SetText(f.asking and GetTime() - f.asking < 7 and "Asking the Void players here..."
-            or "None known yet: Refresh asks the Void players here.")
+            or "Nobody known who can bring you to another layer right now: Refresh asks the Void players here.")
         f.layersEmpty:Show()
         y = y - ROW_H - 4
     else
@@ -664,7 +673,12 @@ UI_Update = function()
     end
 
     -- rares: the section only shows when there are some (it took two lines to say "none")
-    local rares = (c and zone) and c:Rares(zone) or {}
+    -- only rares you can walk to: on your layer, or next door on it. A rare on another layer shows in that layer's row
+    -- above, when someone there can bring you over (2026-11-21).
+    local rares = {}
+    for _, x in ipairs((c and zone) and c:Rares(zone) or {}) do
+        if x.same then rares[#rares + 1] = x end
+    end
     -- and rares up next door on YOUR layer (linked across zones): walk over, no hop
     if c and zone and c.RaresNextDoor then
         for _, x in ipairs(c:RaresNextDoor()) do rares[#rares + 1] = x end
