@@ -546,10 +546,11 @@ UI_Update = function()
         f.mine:SetText("Starting up...")
     elseif cur then
         local here = c:Counts(zone)[cur] or 0
-        f.mine:SetText(("You're on |cffffd200%s|r  |cff777777%s|r%s"):format(c:Label(zone, cur), cur,
+        -- the name only: since 2026-11-24 it's a name VoidLayer gives the layer (Layer.lua v2), not a number to read
+        f.mine:SetText(("You're on |cffffd200%s|r%s"):format(c:Label(zone, cur),
             here > 0 and ("  ·  %d Void player%s here too"):format(here, here == 1 and "" or "s") or ""))
     else
-        f.mine:SetText("Your layer: |cff999999not known yet|r (target any NPC)")
+        f.mine:SetText("Your layer: |cff999999none here|r (no zone, or inside a dungeon)")
     end
 
     -- every line goes below the real height of the one above (live 11-14: "not known yet ... any NPC"
@@ -621,7 +622,8 @@ UI_Update = function()
     -- how many layers this zone has, as far as Void players saw in the last 30 minutes
     local nSeen = (c and zone and c.LayersSeen) and c:LayersSeen(zone) or 0
     local extra = {}
-    if nSeen > 1 then extra[#extra + 1] = ("%d layers here (30 min)"):format(nSeen) end
+    -- (no "N layers here" since 2026-11-24: two names can be one layer until Void players meet; nSeen unused)
+    local _ = nSeen
     if online then extra[#extra + 1] = ("%d Void online"):format(online) end
     f.layersH:SetText("Other layers" .. (#extra > 0 and ("  |cff888888· " .. table.concat(extra, " · ") .. "|r") or ""))
     local list = (c and zone) and otherLayers(c, zone, cur) or {}
@@ -800,7 +802,7 @@ local function buildLabel()
             local span = ns.SpanText(c, zone, cur)
             if span then GameTooltip:AddLine(span, 0.8, 0.8, 0.8, true) end
         else
-            GameTooltip:AddLine("Point at or target any NPC to read your layer.", 0.8, 0.8, 0.8, true)
+            GameTooltip:AddLine("No layer here (no zone, or inside a dungeon).", 0.8, 0.8, 0.8, true)
         end
         local wr = refreshLeft()
         if wr then

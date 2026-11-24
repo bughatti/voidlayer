@@ -1,5 +1,12 @@
 # VoidLayer Changelog
 
+## 0.6.0 — 2026-11-24
+
+- **Works again after the game's November 20 update (WoW Forever).** The update gave every NPC a number of its own, so reading the layer off the NPCs around you stopped working: the layer shown kept jumping. VoidLayer now names your layer itself and lets the game keep the name right: a world refresh or a hop gives you a new name, Void players who turn out to be on one layer (they see each other, or group up) take one name, and a hop gives you your helper's name. No more "target any NPC".
+- **No wasted hops:** a group invite tells the game whether the inviter is on your layer. When a helper is on your layer already, the invite is turned down at once and the next helper is asked.
+- **Group hop** asks the game whether your leader is on your layer, instead of comparing numbers.
+- Your layer's name survives a /reload.
+
 ## 0.5.2 — 2026-11-21
 
 - **The window only offers layers you can get to.** A layer is listed while a Void player there can bring you over. Someone who answers busy (in a group, in combat, just helped someone) or doesn't answer drops out until they say they can again, so Hop no longer fails one layer after another.

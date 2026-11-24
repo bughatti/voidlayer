@@ -15,13 +15,12 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 ## Features
 
 ### Your layer, always in view
-- **Under the minimap:** "Layer 6832". A layer's name is its own number, so it's **the same for every player**: you and a guildie on one layer both see "Layer 6832" (checked with two players side by side). Hover it for the other layers Void players are on in your zone. An orange dot means a rare is up on another layer. Click it for the window
-- Read from the NPCs around you, so look at or target any NPC once after you arrive somewhere
+- **Under the minimap:** "Layer 512". Since the game update of November 20 a layer can no longer be read off the NPCs around you (every NPC now carries a number of its own), so **VoidLayer names your layer and the game itself keeps the name right**: when the game moves you (a world refresh or a hop) you get a new name; when Void players turn out to be on one layer (you see each other, or you group up) you all take one name; a hop gives you your helper's name. Nothing to target, it's there as soon as you arrive. Hover it for the other layers Void players are on in your zone. An orange dot means a rare is up on another layer. Click it for the window
 - **Players seen on this layer:** every player your nameplates, target or mouseover picked up in the last 15 minutes, and how many are the other faction. You only ever see players on your own layer, so they're all on it. It's a minimum, not everyone: the game gives addons no full count
 - **The quietest layer:** next to "Players seen" the window says which layer of your zone is quietest. Void players on other layers send how many players they've seen there; the fewest wins (or "yours", when yours is). Each layer in the list shows its count. Only layers with a Void player on them can be compared
 
 ### Your layer, zone to zone
-- Every zone gives you its own layer number, and the game remembers yours: walk from the Barrens into Ashenvale and back, and you're on the same "Layer 6831" and "Layer 6829" every time (measured)
+- Every zone has its own layers, and walking over a zone border keeps the one you're on: walk from the Barrens into Ashenvale and back, and your Barrens layer keeps its name (measured)
 - When you cross a zone line on your own, VoidLayer remembers which numbers are yours. The window says **"Same layer as The Barrens 6831"**
 - **Rares next door on your layer:** a rare up in the next zone on your number there shows in the window and in chat: walk over, no hop needed
 - Other VoidLayer players' crossings show too, in grey ("Other Void players went on to Stonetalon 7051"). They may not be yours: a world refresh moves only the zone you're in
@@ -53,7 +52,8 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### Rares on other layers
 - When a Void player sees a rare, every Void player in that zone hears about it: its name, which layer, how much health it has left, how long ago, and when it dies
-- **On another layer?** "Rare X is up on Layer 7054. Hop there?" One click, and a Void player there brings you over. Asked only when someone there can
+- **On another layer?** "Rare X is up on Layer 704. Hop there?" One click, and a Void player there brings you over. Asked only when someone there can
+- **No wasted hops:** every group invite tells the game whether the inviter is on your layer. When a helper turns out to be on your layer already, VoidLayer turns the invite down at once and asks the next one, and the two of you share one layer name from then on
 - **On yours?** A line in chat with where it was seen
 - In the window, a rare up on a layer you can get to shows in that layer's row, by name, with its **Hop**. **Rares on your layer** lists the ones you can walk to (at most 3)
 
@@ -87,7 +87,7 @@ You rarely need them: click your layer under the minimap.
 | Command | What it does |
 |---|---|
 | `/vl` | Open or close the window |
-| `/vl hop` | Hop to any other layer in your zone (`/vl hop 7054` for Layer 7054) |
+| `/vl hop` | Hop to any other layer in your zone (`/vl hop 704` for Layer 704) |
 | `/vl host` | Help others change layer: on or off |
 | `/vl layers` | The layers in your zone, in chat |
 | `/vl net` | Check that messages to other Void players get through (and how many bounced) |
@@ -99,7 +99,7 @@ You rarely need them: click your layer under the minimap.
 
 1. Install with the CurseForge app, or copy the `VoidLayer` folder into `World of Warcraft/_forever_/Interface/AddOns/`.
 2. Restart WoW or `/reload`.
-3. Point at any NPC: your layer shows under the minimap ("Layer 6832"). Click it.
+3. Your layer shows under the minimap ("Layer 512"). Click it.
 
 ---
 
