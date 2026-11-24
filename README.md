@@ -21,10 +21,9 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### Your layer, zone to zone
 - Every zone has its own layers, and walking over a zone border keeps the one you're on: walk from the Barrens into Ashenvale and back, and your Barrens layer keeps its name (measured)
-- When you cross a zone line on your own, VoidLayer remembers which numbers are yours. The window says **"Same layer as The Barrens 6831"**
+- When you cross a zone line on your own, VoidLayer remembers which layers are yours on each side. The window says **"Same layer as The Barrens 512"**
 - **Rares next door on your layer:** a rare up in the next zone on your number there shows in the window and in chat: walk over, no hop needed
-- Other VoidLayer players' crossings show too, in grey ("Other Void players went on to Stonetalon 7051"). They may not be yours: a world refresh moves only the zone you're in
-- **How many layers a zone has:** the window shows how many layers VoidLayer players have seen in your zone in the last 30 minutes
+- Other VoidLayer players' crossings show too, in grey ("Other Void players went on to Stonetalon 704"). They may not be yours: a world refresh moves only the zone you're in
 
 ### Fresh camp: farm the same spot on another layer
 - A hop doesn't move you: the world around you becomes the other layer's copy. So after you clear a pack, the same spot on another layer can still be full
@@ -47,7 +46,7 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 
 ### In a group, but on another layer than the leader
 - Joining a group puts you on the leader's layer, but not always: someone who joined earlier, or crossed a zone line, can end up on another one, and then the group can't see each other
-- VoidLayer notices: exactly when the leader runs VoidLayer too, otherwise when the leader is right next to you but you can't see them. It says so in chat once and points you to **Group hop**
+- VoidLayer notices: when the leader is in your zone the game itself says whether you're on their layer; otherwise it goes by the leader's VoidLayer, or by the leader standing right next to you while you can't see them. It says so in chat once and points you to **Group hop**
 - **Group hop** (in a party or a raid led by someone else) leaves the group and gets you re-invited, which puts you on the leader's layer: automatic when the leader runs VoidLayer, otherwise the leader gets a whisper asking for the invite. Only you leave; never in combat or inside dungeons
 
 ### Rares on other layers
