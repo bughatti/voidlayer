@@ -1,5 +1,10 @@
 # VoidLayer Changelog
 
+## 0.6.1 — 2026-11-25
+
+- **Move group:** in a party, Fresh layer becomes Move group: one click takes the whole party to a fresh layer. Anyone in the party can start it; the others are invited over once you're there. Party members without VoidLayer get a whisper and a plain invite.
+- **VoidHub window (WoW Forever):** right-click the VoidHub minimap button (or type /vhub) for every Void addon in one window: quests, layers, gear, gold, professions, combat, dungeons and more, each drawn from its own addon, with a Start page for what to do right now. Addons you don't have show a screenshot and how to get them. Shift + right-click opens Copy settings from another character. It comes inside every Void addon: nothing extra to install.
+
 ## 0.6.0 — 2026-11-24
 
 - **Works again after the game's November 20 update (WoW Forever).** The update gave every NPC a number of its own, so reading the layer off the NPCs around you stopped working: the layer shown kept jumping. VoidLayer now names your layer itself and lets the game keep the name right: a world refresh or a hop gives you a new name, Void players who turn out to be on one layer (they see each other, or group up) take one name, and a hop gives you your helper's name. No more "target any NPC".

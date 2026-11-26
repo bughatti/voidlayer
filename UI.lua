@@ -420,10 +420,31 @@ local function build()
     f.any:SetScript("OnLeave", function() GameTooltip:Hide() end)
     -- fresh camp (VoidLayerCore section 5): a layer where the spot you're standing on wasn't cleared lately
     f.fresh = button(f, "Fresh layer", BW)
-    f.fresh:SetScript("OnClick", function() local c = core(); if c and c.StartFresh then c:StartFresh() end end)
+    -- in a party it's Move group (core 10, 2026-11-24): the whole party to a fresh layer; while one is
+    -- under way (moving it, or following someone who is), Cancel
+    f.fresh:SetScript("OnClick", function(self)
+        local c = core()
+        if not c then return end
+        if self.mode == "cancel" then c:MoveGroupCancel()
+        elseif self.mode == "group" then c:MoveGroup()
+        elseif c.StartFresh then c:StartFresh() end
+    end)
     f.fresh:SetScript("OnEnter", function(self)
         local c = core()
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        if self.mode == "cancel" then
+            GameTooltip:AddLine("Cancel the group move", 1, 1, 1)
+            GameTooltip:AddLine("Moving it: stops the hop and invites everyone back to where you are. Following: you stop waiting for the invite (it still shows up as usual).", 0.8, 0.8, 0.8, true)
+            GameTooltip:Show()
+            return
+        elseif self.mode == "group" then
+            GameTooltip:AddLine("Move group", 1, 1, 1)
+            GameTooltip:AddLine("Takes your whole party to a fresh layer: the others leave the group, you hop (like Fresh layer) and invite them back. Joining puts them on your layer, so everyone lands there. With VoidLayer they leave and accept by themselves; without it they get a whisper. Anyone in the party can start it.", 0.8, 0.8, 0.8, true)
+            GameTooltip:AddLine("Nobody leaves until a Void player on another layer is found. If the hop fails, you invite them back anyway.", 0.8, 0.8, 0.8, true)
+            if self.why then GameTooltip:AddLine(self.why, 1, 0.82, 0, true) end
+            GameTooltip:Show()
+            return
+        end
         GameTooltip:AddLine("Fresh layer here", 1, 1, 1)
         GameTooltip:AddLine("Hops you to another layer: the one where the mobs around you are most likely up. With no reports, any layer a Void player can bring you to (it was Hop to any).", 0.9, 0.9, 0.9, true)
         GameTooltip:AddLine("Cleared this spot? A hop doesn't move you: the world around you becomes the other layer's copy, where these mobs may still be up. This picks the layer where nobody reported clearing this spot, or reported it longest ago, and skips one you cleared it on yourself in the last 10 minutes. Not a promise: only Void players report clears.", 0.8, 0.8, 0.8, true)
@@ -740,12 +761,26 @@ UI_Update = function()
     local left = (c and zone) and c:AskLeft(zone) or 0
     f.refresh:SetEnabled(c ~= nil and zone ~= nil and left == 0)
     f.refresh:SetText(left > 0 and ("Refresh %d:%02d"):format(math.floor(left / 60), math.floor(left % 60)) or "Refresh")
-    f.fresh:SetEnabled(c ~= nil and c.StartFresh ~= nil and not blocked and cur ~= nil)
+    -- Fresh layer solo; Move group in a party; Cancel while a group move is under way (core 10)
+    local moving = c and c.MovingGroup and (c:MovingGroup() or c:Following())
+    if moving then
+        f.fresh.mode, f.fresh.why = "cancel", nil
+        f.fresh:SetText("Cancel move")
+        f.fresh:SetEnabled(true)
+    elseif c and c.MoveGroup and IsInGroup() and not IsInRaid() then
+        f.fresh.mode, f.fresh.why = "group", c:MoveGroupBlocked()
+        f.fresh:SetText("Move group")
+        f.fresh:SetEnabled(f.fresh.why == nil)
+    else
+        f.fresh.mode, f.fresh.why = nil, nil
+        f.fresh:SetText("Fresh layer")
+        f.fresh:SetEnabled(c ~= nil and c.StartFresh ~= nil and not blocked and cur ~= nil)
+    end
     y = y - 24
 
     -- a status line only when there's something to say (blocked, a hop under way, why not here);
     -- the online count is in the title
-    local status = c and c:Status()
+    local status = c and ((c.GroupMoveStatus and c:GroupMoveStatus()) or c:Status())
     if not status and c then
         status = c:Blocked()
         if status == "A hop is under way." then status = nil end
@@ -929,3 +964,18 @@ table.insert(VoidHubToggles, {
     get = function() local c = core(); return c and c:PopupsOn() or false end,
     set = function(on) local c = core(); if c then c:SetPopups(on) end end,
 })
+
+----------------------------------------------------------------------
+-- Read-only hooks for the all-in-one VoidHub window (2026-11-24). The hub draws its own Layers page from
+-- these, the same helpers this window uses (everything else comes from VoidLayerCore). Nothing here changes
+-- this window.
+----------------------------------------------------------------------
+_G.VoidLayerHub = {
+    SeenText = function(c, zone, cur) return seenText(true, c, zone, cur) end,
+    SpanText = function(c, zone, cur) return ns.SpanText(c, zone, cur) end,
+    RefreshLeft = refreshLeft, CanRefreshNow = canRefreshNow, RefreshNow = function() return ns.RefreshNow() end,
+    OtherLayers = otherLayers, Ago = ago, ZoneName = zoneName, Forever = forever,
+    LabelOn = function() return char().label ~= false end,
+    SetLabel = function(on) char().label = on; ns.UpdateLabel() end,
+    Toggle = toggle,
+}

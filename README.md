@@ -30,7 +30,8 @@ WoW Forever splits busy zones into layers: copies of the same zone with differen
 - When a pack dies around you (five mobs close together), VoidLayer notes the spot as cleared on your layer and tells the VoidLayer players in your zone (when, on a rough grid; never anyone's position)
 - **Fresh layer** in the window hops you to the layer where nobody reported clearing your spot, or reported it longest ago. A layer you cleared it on yourself in the last 10 minutes is skipped. Each other layer in the window shows "spot cleared 4m ago" when someone reported it
 - Clear a camp and a Void player on such a layer can bring you over: VoidLayer asks "Hop there?" (after the fight). One click
-- Not a promise: only VoidLayer players report clears, and respawn times differ. Solo for now; groups come later
+- Not a promise: only VoidLayer players report clears, and respawn times differ
+- **In a party, Fresh layer becomes Move group:** one click takes the whole party to a fresh layer. Anyone in the party can start it. The others keep playing together while you hop through a Void player; then they're invited over to your new layer. Party members without VoidLayer get a whisper and a plain invite. Nobody leaves the group until a layer to go to is found, and a failed or cancelled move calls everyone back
 
 ### World refresh: a new layer, solo
 - Now and then the game says "The world around you will refresh in 9 Minutes": it's going to move you to another layer in the zone you're in. VoidLayer counts it down under the minimap and in the window, and warns you in chat (louder if you just hopped, because that hop won't hold)
